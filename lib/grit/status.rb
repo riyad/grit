@@ -84,23 +84,23 @@ module Grit
       end
 
       def added?
-        state == :added
+        status == :added
       end
 
       def deleted?
-        state == :deleted
+        status == :deleted
       end
 
       def modified?
-        state == :modified
+        status == :modified
       end
 
       def untracked?
-        state == :untracked
+        status == :untracked
       end
 
       def changed?
-        !state.nil?
+        !status.nil?
       end
 
       def changes_staged?

@@ -36,7 +36,7 @@ class TestStatus < Test::Unit::TestCase
       s = g.status['untracked.txt']
 
       assert(s.untracked?)
-      assert_equal(:untracked, s.state)
+      assert_equal(:untracked, s.status)
     end
   end
 
@@ -108,7 +108,7 @@ class TestStatus < Test::Unit::TestCase
       s = g.status['newly_added.txt']
 
       assert(s.added?)
-      assert_equal(:added, s.state)
+      assert_equal(:added, s.status)
     end
   end
 
@@ -193,7 +193,7 @@ class TestStatus < Test::Unit::TestCase
 #       s = g.status['modified.txt']
 # 
 #       assert(s.modified?)
-#       assert_equal(:modified, s.state)
+#       assert_equal(:modified, s.status)
 #     end
 #   end
 # 
@@ -292,7 +292,7 @@ class TestStatus < Test::Unit::TestCase
 #       s = g.status['updated.txt']
 # 
 #       assert(s.modified?)
-#       assert_equal(:modified, s.state)
+#       assert_equal(:modified, s.status)
 #     end
 #   end
 # 
@@ -395,7 +395,7 @@ class TestStatus < Test::Unit::TestCase
 #       s = g.status['removed.txt']
 # 
 #       assert(s.deleted?)
-#       assert_equal(:deleted, s.state)
+#       assert_equal(:deleted, s.status)
 #     end
 #   end
 # 
@@ -492,7 +492,7 @@ class TestStatus < Test::Unit::TestCase
 #       s = g.status['deleted.txt']
 # 
 #       assert(s.deleted?)
-#       assert_equal(:deleted, s.state)
+#       assert_equal(:deleted, s.status)
 #     end
 #   end
 # 
