@@ -41,7 +41,7 @@ module Grit
     end
     
     class StatusFile
-      attr_accessor :path, :type, :stage, :untracked
+      attr_accessor :path, :status, :stage
       attr_accessor :mode_index, :mode_repo
       attr_accessor :sha_index, :sha_repo
       
