@@ -50,13 +50,13 @@ module Grit
       def initialize(base, hash)
         @base = base
         @path = hash[:path]
-        @type = hash[:type]
+        @status = {'A' => :added, 'D' => :deleted, 'M' => :modified, 'U' => :untracked}[hash[:status]]
         @stage = hash[:stage]
         @mode_index = hash[:mode_index]
         @mode_repo = hash[:mode_repo]
-        @sha_index = hash[:sha_index]
-        @sha_repo = hash[:sha_repo]
-        @untracked = hash[:untracked]
+        @sha_index = hash[:sha_index] =~ /^[0]*$/ ? nil : hash[:sha_index]
+        @sha_repo = hash[:sha_repo] =~ /^[0]*$/ ? nil : hash[:sha_repo]
+        @staged = hash[:staged]
       end
       
       def blob(type = :index)
@@ -103,9 +103,9 @@ module Grit
         hsh = {}
         @base.git.diff_files.split("\n").each do |line|
           (info, file) = line.split("\t")
-          (mode_src, mode_dest, sha_src, sha_dest, type) = info.split
-          hsh[file] = {:path => file, :mode_file => mode_src.to_s[1, 7], :mode_index => mode_dest, 
-                        :sha_file => sha_src, :sha_index => sha_dest, :type => type}
+          (mode_src, mode_dest, sha_src, sha_dest, status) = info.split
+          hsh[file] = {:path => file, :mode_repo => mode_src.to_s[1, 7], :mode_index => mode_dest,
+                        :sha_repo => sha_src, :sha_index => sha_dest, :status => status}
         end
         hsh
       end
@@ -115,9 +115,9 @@ module Grit
         hsh = {}
         @base.git.diff_index({}, treeish).split("\n").each do |line|
           (info, file) = line.split("\t")
-          (mode_src, mode_dest, sha_src, sha_dest, type) = info.split
+          (mode_src, mode_dest, sha_src, sha_dest, status) = info.split
           hsh[file] = {:path => file, :mode_repo => mode_src.to_s[1, 7], :mode_index => mode_dest, 
-                        :sha_repo => sha_src, :sha_index => sha_dest, :type => type}
+                        :sha_repo => sha_src, :sha_index => sha_dest, :status => status}
         end
         hsh
       end
