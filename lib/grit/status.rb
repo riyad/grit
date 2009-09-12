@@ -26,20 +26,6 @@ module Grit
     def untracked
       @files.select { |k, f| f.untracked }
     end
-    
-    def pretty
-      out = ''
-      self.each do |file|
-        out << file.path
-        out << "\n\tsha(r) " + file.sha_repo.to_s + ' ' + file.mode_repo.to_s
-        out << "\n\tsha(i) " + file.sha_index.to_s + ' ' + file.mode_index.to_s
-        out << "\n\ttype   " + file.type.to_s
-        out << "\n\tstage  " + file.stage.to_s
-        out << "\n\tuntrac " + file.untracked.to_s
-        out << "\n"
-      end
-      out << "\n"
-      out
     end
     
     # enumerable method
