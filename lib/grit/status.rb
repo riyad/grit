@@ -66,7 +66,40 @@ module Grit
           @base.object(@sha_index) rescue @base.object(@sha_repo)
         end
       end
-      
+
+      def diff
+        unless untracked?
+          @diff ||= @base.diff(nil, nil, path)#.cached(changes_staged?)
+        end
+      end
+
+      def added?
+        state == :added
+      end
+
+      def deleted?
+        state == :deleted
+      end
+
+      def modified?
+        state == :modified
+      end
+
+      def untracked?
+        state == :untracked
+      end
+
+      def changed?
+        !state.nil?
+      end
+
+      def changes_staged?
+        changed? && @staged
+      end
+
+      def changes_unstaged?
+        changed? && !@staged
+      end
     end
     
     private
