@@ -132,6 +132,15 @@ module Grit
         end
         hsh
       end
+
+      def untracked_files
+        other_files = @base.git.ls_files({:others => true}).split("\n")
+        other_files - ignored_files
+      end
+
+      def ignored_files
+        @base.git.ls_files({:others => true, :i => true, :exclude_standard => true}).split("\n")
+      end
   end
   
 end
