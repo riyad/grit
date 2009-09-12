@@ -63,12 +63,17 @@ module Grit
         @sha_repo = hash[:sha_repo] =~ /^[0]*$/ ? nil : hash[:sha_repo]
         @staged = hash[:staged]
       end
-      
-      def blob(type = :index)
-        if type == :repo
-          @base.object(@sha_repo)
-        else
-          @base.object(@sha_index) rescue @base.object(@sha_repo)
+
+      def blob(type = nil)
+        type = (changes_unstaged? ? :file : :index) unless type
+
+        case type
+        when :file
+          File.read(path) if File.exist?(path)
+        when :index
+          @base.blob(sha_index) if sha_index
+        when :repo
+          @base.blob(sha_repo) if sha_repo
         end
       end
 
