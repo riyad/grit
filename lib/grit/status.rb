@@ -72,29 +72,58 @@ module Grit
     private
     
       def construct_status
-        @files = ls_files
-        
-        Dir.chdir(@base.working_dir) do 
-          # find untracked in working dir
-          Dir.glob('**/*') do |file|
-            if !@files[file]
-              @files[file] = {:path => file, :untracked => true} if !File.directory?(file)
-            end
+        @status = {}
+        ls_files.each do |file, data|
+          add_file(file, data)
+        end
+
+        # find untracked files
+        untracked_files.each do |file|
+          add_file(file, {:path => file, :status => 'U', :staged => false})
+        end
+
+        # find modified in tree
+        diff_files.each do |file, data|
+          # if a file shows up here it has not yet been staged
+          # info: staged deleted files don't show up in diff-files
+          data[:staged] = false
+
+          add_file(file, data)
+        end
+
+        # find added but not committed - new files
+        diff_index('HEAD').each do |file, data|
+          # the file has been staged
+          # if the file has a index SHA or is marked as deleted
+          # info: staged deleted files have no index SHA
+          if (data[:sha_index] !~ /^[0]*$/ || data[:status] == 'D') ||
+              (@status[file].last[:sha_repo] != data[:sha_repo])
+            data[:staged] = true
           end
 
-          # find modified in tree
-         diff_files.each do |path, data|
-            @files[path] ? @files[path].merge!(data) : @files[path] = data
+          add_file(file, data) if !(@status[file] && @status[file].last[:status] == 'D')
+        end
+
+        @status.each do |file, data_array|
+          if data_array.size > 1
+            @status[file] = data_array.map{ |data| StatusFile.new(@base, data) }
+          else
+            @status[file] = StatusFile.new(@base, data_array.first)
           end
-        
-          # find added but not committed - new files
-          diff_index('HEAD').each do |path, data|
-            @files[path] ? @files[path].merge!(data) : @files[path] = data
+        end
+        @files = @status.values.flatten
+      end
+
+      def add_file(file, data)
+        if @status[file]
+          last_data = @status[file].last
+          if !last_data[:status] || data[:staged].nil?
+            @status[file][-1] =  data.merge!(last_data)
+          else
+            @status[file] << data
           end
-        
-          @files.each do |k, file_hash|
-            @files[k] = StatusFile.new(@base, file_hash)
-          end
+        else
+          @status[file] = [data]
         end
       end
 
