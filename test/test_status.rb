@@ -107,8 +107,6 @@ class TestStatus < Test::Unit::TestCase
 
       s = g.status['newly_added.txt']
 
-      p s
-
       assert(s.added?)
       assert_equal(:added, s.state)
     end
