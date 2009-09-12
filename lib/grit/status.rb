@@ -10,34 +10,39 @@ module Grit
       @base = base
       construct_status
     end
-    
-    def changed
-      @files.select { |k, f| f.type == 'M' }
-    end
-    
+
     def added
-      @files.select { |k, f| f.type == 'A' }
+      @files.select(&:added?)
     end
 
     def deleted
-      @files.select { |k, f| f.type == 'D' }
+      @files.select(&:deleted?)
     end
-    
+
+    def modified
+      @files.select(&:modified?)
+    end
+
     def untracked
-      @files.select { |k, f| f.untracked }
+      @files.select(&:untracked?)
     end
+
+    def staged_changes
+      @files.select(&:changes_staged?)
+    end
+
+    def unstaged_changes
+      @files.select(&:changes_unstaged?)
     end
     
     # enumerable method
-    
+
     def [](file)
-      @files[file]
+      @status[file]
     end
-    
-    def each
-      @files.each do |k, file|
-        yield file
-      end
+
+    def each(&block)
+      @files.each(&block)
     end
     
     class StatusFile
