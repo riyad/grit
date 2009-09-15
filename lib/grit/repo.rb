@@ -264,7 +264,7 @@ module Grit
       paths = paths_and_options.flatten
 
       if a && b
-        self.git.diff({}, a, b, '--', *paths)
+        self.git.diff({}, a, b)
       else
         paths.unshift('--') unless paths.empty?
         paths.unshift(b) unless b.nil?
