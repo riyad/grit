@@ -258,8 +258,19 @@ module Grit
     #   +a+ is the base commit
     #   +b+ is the other commit
     #   +paths+ is an optional list of file paths on which to restrict the diff
-    def diff(a, b, *paths)
-      self.git.diff({}, a, b, '--', *paths)
+    #   +options+ is any additional options to the git diff command
+    def diff(a, b, *paths_and_options)
+      opts = paths_and_options.last.is_a?(Hash) ? paths_and_options.pop : {}
+      paths = paths_and_options.flatten
+
+      if a && b
+        self.git.diff({}, a, b, '--', *paths)
+      else
+        paths.unshift('--') unless paths.empty?
+        paths.unshift(b) unless b.nil?
+        paths.unshift(a) unless a.nil?
+        self.git.run('', 'diff', '', opts, *paths)
+      end
     end
     
     # The commit diff for the given commit
