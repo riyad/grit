@@ -62,6 +62,7 @@ module Grit
           diff_lines << lines.shift
         end
         diff = diff_lines.join("\n")
+        diff = nil if diff.empty?
         
         diffs << Diff.new(repo, a_path, b_path, a_sha, b_sha, a_mode, b_mode, new_file, deleted_file, diff)
       end
