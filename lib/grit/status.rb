@@ -79,7 +79,10 @@ module Grit
 
       def diff
         unless untracked?
-          @diff ||= @base.diff(nil, nil, path)#.cached(changes_staged?)
+          return @diff if @diff
+
+          diff = @base.diff(nil, nil, path, :cached => changes_staged?)
+          @diff = Diff.list_from_string(@base, diff).first
         end
       end
 
