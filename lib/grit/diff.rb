@@ -24,7 +24,7 @@ module Grit
     end
     
     def self.list_from_string(repo, text)
-      lines = text.split("\n")
+      lines = text.split("\n", -1)
       
       diffs = []
       
