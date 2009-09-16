@@ -14,8 +14,8 @@ module Grit
       @b_path = b_path
       @a_sha  = a_sha =~ /^0*$/ ? nil : a_sha
       @b_sha  = b_sha =~ /^0*$/ ? nil : b_sha
-      @a_blob = a_sha.nil? ? nil : Blob.create(repo, :id => a_sha)
-      @b_blob = b_sha.nil? ? nil : Blob.create(repo, :id => b_sha)
+      @a_blob = @a_sha.nil? ? nil : Blob.create(repo, :id => @a_sha)
+      @b_blob = @b_sha.nil? ? nil : Blob.create(repo, :id => @b_sha)
       @a_mode = a_mode
       @b_mode = b_mode
       @new_file = new_file || @a_blob.nil?
