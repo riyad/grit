@@ -208,25 +208,25 @@ class TestRepo < Test::Unit::TestCase
   end
 
   def test_diff_uncached_changes
-    Git.any_instance.expects(:run).with('', 'diff', '', {})
+    Git.any_instance.expects(:run).with('', 'diff', '', {}, [])
 
     @r.diff(nil, nil)
   end
 
   def test_diff_uncached_changes_with_paths
-    Git.any_instance.expects(:run).with('', 'diff', '', {}, '--', 'file_a.rb', 'file_b.rb')
+    Git.any_instance.expects(:run).with('', 'diff', '', {}, ['--', 'file_a.rb', 'file_b.rb'])
 
     @r.diff(nil, nil, ['file_a.rb', 'file_b.rb'])
   end
 
   def test_diff_cached_changes
-    Git.any_instance.expects(:run).with('', 'diff', '', {:cached => true})
+    Git.any_instance.expects(:run).with('', 'diff', '', {:cached => true}, [])
 
     @r.diff(nil, nil, :cached => true)
   end
 
   def test_diff_cached_changes_with_paths
-    Git.any_instance.expects(:run).with('', 'diff', '', {:cached => true}, '--', 'file_a.rb')
+    Git.any_instance.expects(:run).with('', 'diff', '', {:cached => true}, ['--', 'file_a.rb'])
 
     @r.diff(nil, nil, 'file_a.rb', :cached => true)
   end
