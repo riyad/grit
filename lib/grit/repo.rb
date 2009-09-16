@@ -269,7 +269,7 @@ module Grit
         paths.unshift('--') unless paths.empty?
         paths.unshift(b) unless b.nil?
         paths.unshift(a) unless a.nil?
-        self.git.run('', 'diff', '', opts, *paths)
+        self.git.run('', 'diff', '', opts, paths)
       end
     end
     
