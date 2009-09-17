@@ -237,6 +237,13 @@ module Grit
         'committed_date' => committed_date.xmlschema,
       }
     end
+
+    # Is this a merge commit? It is if it has multiple parents.
+    #
+    # Returns +true+ if so, otherwise +false+.
+    def merge?
+      parents.size > 1
+    end
   end # Commit
 
 end # Grit
