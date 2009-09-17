@@ -244,6 +244,80 @@ module Grit
     def merge?
       parents.size > 1
     end
+
+    # Find the children of this commit. Per default only the current head is
+    # searched. You can also pass
+    # <tt>:current</tt> for searching the current head,
+    # <tt>:all</tt> for searching on all heads or
+    # provide a list of _refs_ (Grit::Head, SHA1 or names) to start searching from.
+    #
+    # Returns an array of (unbaked) Grit::Commit.
+    #
+    # === Examples
+    #   children             # same as #children_on
+    #   children_on :current # same as children_on(repo.head)
+    #   children_on :all     # same as children_on(repo.heads)
+    #   children_on 'foo'
+    #   children_on ['master', '1234567']
+    def children_on(refs = :current)
+      case refs
+      when :current: refs = [@repo.head]
+      when :all:     refs = @repo.heads
+      else
+        if refs.is_a?(Enumerable)
+          refs = refs.to_a
+        else
+          refs = [refs]
+        end
+      end
+
+      refs.map! { |r| r.respond_to?(:name) ? r.name : r.to_s }
+
+      # used for caching the result
+      refs_key = refs.sort.join(' ')
+
+      @children ||= {}
+      if @children[refs_key]
+        @children[refs_key]
+      else
+        children_shas = children_of(@id, refs)
+        children = children_shas.map { |sha| Commit.create(@repo, {:id => sha}) }
+        @children[refs_key] = children
+      end
+    end
+    alias_method :children, :children_on
+
+    # Has this commit been branched off of?
+    # It has been if it has multiple children.
+    # You can also specify the branches to consider (see children_on).
+    def branched_on?(refs = :current)
+      children_on(refs).size > 1
+    end
+    alias_method :branched?, :branched_on?
+
+    private
+      # Finds the children of _commit_ starting from the given list of _refs_ (SHA1s or names).
+      #
+      # Returns an array of SHA1 Strings.
+      def children_of(commit, *refs)
+        sha = commit.to_s
+        refs = refs.flatten.map(&:to_s)
+
+        opts = {:children => true}
+        args = refs
+        args << "^#{sha}^@"
+        args << '--'
+
+        rev_list = @repo.git.rev_list(opts, *args).split("\n")
+        rev_index_for_commit = rev_list.find_index { |rev_line| rev_line =~ /^#{sha}/ }
+        if rev_index_for_commit
+          rev_line_for_commit = rev_list[rev_index_for_commit]
+
+          children = rev_line_for_commit.split(' ')[1..-1]
+        else
+          []
+        end
+      end
   end # Commit
 
 end # Grit
