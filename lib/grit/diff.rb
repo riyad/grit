@@ -69,6 +69,18 @@ module Grit
       
       diffs
     end
+
+    # Tells you the number of deleted lines in the diff.
+    def deletions
+      # -1 for the line starting in ---
+      self.diff.split("\n").count { |line| line.start_with?('-') } -1
+    end
+
+    # Tells you the number of inserted lines in the diff.
+    def insertions
+      # -1 for the line starting in +++
+      self.diff.split("\n").count { |line| line.start_with?('+') } -1
+    end
   end # Diff
   
 end # Grit
