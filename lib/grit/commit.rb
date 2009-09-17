@@ -146,7 +146,7 @@ module Grit
     #   +b+ is an optional named commit.  Passing an array assumes you
     #     wish to omit the second named commit and limit the diff to the
     #     given paths.
-    #   +paths* is an array of paths to limit the diff.
+    #   +paths+ is an array of paths to limit the diff.
     #
     # Returns Grit::Diff[] (baked)
     def self.diff(repo, a, b = nil, paths = [])
