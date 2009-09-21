@@ -307,20 +307,6 @@ module Grit
       Commit.diff(self, commit)
     end
     
-    # Initialize a bare git repository at the given path
-    #   +path+ is the full path to the repo (traditionally ends with /<name>.git)
-    #   +options+ is any additional options to the git init command
-    #
-    # Examples
-    #   Grit::Repo.init_bare('/var/git/myrepo.git')
-    #
-    # Returns Grit::Repo (the newly created repo)
-    def self.init_bare(path, git_options = {}, repo_options = {})
-      git = Git.new(path)
-      git.init(git_options)
-      self.new(path, repo_options)
-    end
-    
     # Fork a bare git repository from this repo
     #   +path+ is the full path of the new repo (traditionally ends with /<name>.git)
     #   +options+ is any additional options to the git clone command (:bare and :shared are true by default)
