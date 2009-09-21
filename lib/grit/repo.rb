@@ -79,7 +79,7 @@ module Grit
       repo_path = my_repo
       bare_repo_path = options[:bare] ? repo_path : File.join(repo_path, '.git')
 
-      Grit::GitRuby::Repository.init(bare_repo_path, options[:bare])
+      Git.new(bare_repo_path).init(options)
 
       Grit::Repo.new(repo_path, :is_bare => options[:bare])
     end
