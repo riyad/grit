@@ -38,13 +38,50 @@ module Grit
       
       self.git = Git.new(self.path)
     end
-   
-    # Does nothing yet...
-    def self.init(path)
-      # !! TODO !!
-      # create directory
-      # generate initial git directory
-      # create new Grit::Repo on that dir, return it
+
+    # Clones _their_repo_ into _my_repo_.
+    # +options+ may include:
+    # <tt>:bare => true</tt> if it should only do a bare clone
+    #
+    # Returns the Grit::Repo of the cloned repository.
+    #
+    # === Examples
+    #   # Note: that the _my_repo_ location may not exists before
+    #   Repo.clone('git://github.com/mojombo/grit.git', '~/projects/my_grit_clone')
+    #   #=> #<Grit::Repo "~/projects/my_grit_clone/.git">
+    #   Repo.clone('git://github.com/mojombo/grit.git', '~/projects/my_grit_clone.git', :bare => true)
+    #   #=> #<Grit::Repo "~/projects/my_grit_clone.git">
+    def self.clone(their_repo, my_repo, options = {})
+      repo_path = File.expand_path(my_repo)
+      bare_repo_path = options[:bare] ? repo_path : File.join(repo_path, '.git')
+
+      Grit::Git.new(bare_repo_path).clone({:bare => true}, their_repo, bare_repo_path)
+      repo = Grit::Repo.new(repo_path, :is_bare => options[:bare])
+
+      repo.git.checkout({}, 'HEAD') unless options[:bare]
+
+      repo
+    end
+
+    # Creates a fresh repository in _my_repo_.
+    # +options+ may include:
+    # <tt>:bare => true</tt> if it should do a bare init
+    #
+    # Returns the Grit::Repo of the new repository.
+    #
+    # === Examples
+    #   # Note: that the _my_repo_ location may not exists before
+    #   Repo.init('~/projects/foo')
+    #   #=> #<Grit::Repo "~/projects/foo/.git">
+    #   Repo.init('~/projects/bar.git', :bare => true)
+    #   #=> #<Grit::Repo "~/projects/bar.git">
+    def self.init(my_repo, options = {})
+      repo_path = File.expand_path(my_repo)
+      bare_repo_path = options[:bare] ? repo_path : File.join(repo_path, '.git')
+
+      Git.new(bare_repo_path).init(options)
+
+      Grit::Repo.new(repo_path, :is_bare => options[:bare])
     end
     
     # The project's description. Taken verbatim from GIT_REPO/description
@@ -279,20 +316,6 @@ module Grit
     # Returns Grit::Diff[]
     def commit_diff(commit)
       Commit.diff(self, commit)
-    end
-    
-    # Initialize a bare git repository at the given path
-    #   +path+ is the full path to the repo (traditionally ends with /<name>.git)
-    #   +options+ is any additional options to the git init command
-    #
-    # Examples
-    #   Grit::Repo.init_bare('/var/git/myrepo.git')
-    #
-    # Returns Grit::Repo (the newly created repo)
-    def self.init_bare(path, git_options = {}, repo_options = {})
-      git = Git.new(path)
-      git.init(git_options)
-      self.new(path, repo_options)
     end
     
     # Fork a bare git repository from this repo

@@ -11,8 +11,9 @@ module Grit
     attr_accessor :ruby_git_repo, :git_file_index
     
     def init(options)
-      if options.size == 0
-        Grit::GitRuby::Repository.init(@git_dir)
+      allowed_options = [:bare]
+      if (options.keys - allowed_options).size == 0
+        Grit::GitRuby::Repository.init(@git_dir, options[:bare])
       else
         method_missing('init', options) 
       end
