@@ -52,7 +52,7 @@ module Grit
     #   Repo.clone('git://github.com/mojombo/grit.git', '~/projects/my_grit_clone.git', :bare => true)
     #   #=> #<Grit::Repo "~/projects/my_grit_clone.git">
     def self.clone(their_repo, my_repo, options = {})
-      repo_path = my_repo
+      repo_path = File.expand_path(my_repo)
       bare_repo_path = options[:bare] ? repo_path : File.join(repo_path, '.git')
 
       Grit::Git.new(bare_repo_path).clone({:bare => true}, their_repo, bare_repo_path)
@@ -76,7 +76,7 @@ module Grit
     #   Repo.init('~/projects/bar.git', :bare => true)
     #   #=> #<Grit::Repo "~/projects/bar.git">
     def self.init(my_repo, options = {})
-      repo_path = my_repo
+      repo_path = File.expand_path(my_repo)
       bare_repo_path = options[:bare] ? repo_path : File.join(repo_path, '.git')
 
       Git.new(bare_repo_path).init(options)
