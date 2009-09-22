@@ -39,9 +39,26 @@ module Grit
       ''
     end
 
-    # git diff --full-index 'ec037431382e83c3e95d4f2b3d145afbac8ea55d' 'f1ec1aea10986159456846b8a05615b87828d6c6'
-    def diff(options, sha1, sha2)
-      try_run { ruby_git.diff(sha1, sha2, options) }
+    # Generates diffs between commits, the index and files.
+    #
+    # Returns String
+    #
+    # === Examples
+    #   git.diff({}, 'ec03743', 'f1ec1aea')
+    #   git.diff({:numstat => true}, 'ec03743', 'f1ec1aea')
+    #   git.diff({:cached => true}, nil, nil, 'README')
+    def diff(options, a_sha, b_sha, *files)
+      allowed_options = [:full_index]
+      if (options.keys - allowed_options).size == 0 && files.empty?
+        try_run { ruby_git.diff(sha1, sha2, options) }
+      else
+        args = []
+        args << a_sha unless a_sha.nil?
+        args << b_sha unless b_sha.nil?
+        args << '--' unless files.empty? || files.first == '--'
+        args += files
+        method_missing('diff', options, *args)
+      end
     end
     
     def rev_list(options, *refs)
