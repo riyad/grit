@@ -65,6 +65,42 @@ module Grit
       repo
     end
 
+    # Checks whether a given path contains a git repo.
+    #
+    # _options_ may include:
+    # [<tt>:bare => true</tt>] if the dir contains a bare repo
+    #
+    # Returns +true+ if _path_ contains a git repo otherwise +false+.
+    #
+    # === Examples
+    #   Repo.contains_repository?('~/projects/foo')
+    #   => true
+    #
+    #   Repo.contains_repository?('~/projects/foo', :bare => true)
+    #   => false
+    #
+    #   Repo.contains_repository?('~/projects/foo/.git')
+    #   => true
+    #
+    #   Repo.contains_repository?('~/projects/bar.git')
+    #   => true
+    def self.contains_repository?(path, options = {})
+      repo_path =  File.expand_path(path)
+
+      unless options[:bare]
+        dot_git_path = File.join(repo_path, '.git')
+        bare_repo_path = dot_git_path if File.directory?(dot_git_path)
+      end
+
+      bare_repo_path ||= repo_path
+
+      is_dir_in_bare_git_repo = {'branches' => true, 'config' => false, 'index' => false, 'objects' => true, 'refs' => true}
+
+      File.directory?(bare_repo_path) && # is dir
+        (is_dir_in_bare_git_repo.keys - Dir.entries(bare_repo_path)).size == 0 && # has all the wantend entries
+        is_dir_in_bare_git_repo.keys.all? { |entry| File.directory?(File.join(bare_repo_path, entry)) == is_dir_in_bare_git_repo[entry]}
+    end
+
     # Creates a fresh repository in _my_repo_.
     # Note that the _my_repo_ location may not exists before.
     #
