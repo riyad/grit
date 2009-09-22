@@ -40,17 +40,19 @@ module Grit
     end
 
     # Clones _their_repo_ into _my_repo_.
-    # +options+ may include:
-    # <tt>:bare => true</tt> if it should only do a bare clone
+    # Note that the _my_repo_ location may not exists before.
+    #
+    # _options_ may include:
+    # [<tt>:bare => true</tt>] if it should only do a bare clone
     #
     # Returns the Grit::Repo of the cloned repository.
     #
     # === Examples
-    #   # Note: that the _my_repo_ location may not exists before
     #   Repo.clone('git://github.com/mojombo/grit.git', '~/projects/my_grit_clone')
-    #   #=> #<Grit::Repo "~/projects/my_grit_clone/.git">
+    #   => #<Grit::Repo "~/projects/my_grit_clone/.git">
+    #
     #   Repo.clone('git://github.com/mojombo/grit.git', '~/projects/my_grit_clone.git', :bare => true)
-    #   #=> #<Grit::Repo "~/projects/my_grit_clone.git">
+    #   => #<Grit::Repo "~/projects/my_grit_clone.git">
     def self.clone(their_repo, my_repo, options = {})
       repo_path = File.expand_path(my_repo)
       bare_repo_path = options[:bare] ? repo_path : File.join(repo_path, '.git')
@@ -63,18 +65,56 @@ module Grit
       repo
     end
 
+    # Checks whether a given path contains a git repo.
+    #
+    # _options_ may include:
+    # [<tt>:bare => true</tt>] if the dir contains a bare repo
+    #
+    # Returns +true+ if _path_ contains a git repo otherwise +false+.
+    #
+    # === Examples
+    #   Repo.contains_repository?('~/projects/foo')
+    #   => true
+    #
+    #   Repo.contains_repository?('~/projects/foo', :bare => true)
+    #   => false
+    #
+    #   Repo.contains_repository?('~/projects/foo/.git')
+    #   => true
+    #
+    #   Repo.contains_repository?('~/projects/bar.git')
+    #   => true
+    def self.contains_repository?(path, options = {})
+      repo_path =  File.expand_path(path)
+
+      unless options[:bare]
+        dot_git_path = File.join(repo_path, '.git')
+        bare_repo_path = dot_git_path if File.directory?(dot_git_path)
+      end
+
+      bare_repo_path ||= repo_path
+
+      is_dir_in_bare_git_repo = {'branches' => true, 'config' => false, 'index' => false, 'objects' => true, 'refs' => true}
+
+      File.directory?(bare_repo_path) && # is dir
+        (is_dir_in_bare_git_repo.keys - Dir.entries(bare_repo_path)).size == 0 && # has all the wantend entries
+        is_dir_in_bare_git_repo.keys.all? { |entry| File.directory?(File.join(bare_repo_path, entry)) == is_dir_in_bare_git_repo[entry]}
+    end
+
     # Creates a fresh repository in _my_repo_.
-    # +options+ may include:
-    # <tt>:bare => true</tt> if it should do a bare init
+    # Note that the _my_repo_ location may not exists before.
+    #
+    # _options_ may include:
+    # [<tt>:bare => true</tt>] if it should do a bare init
     #
     # Returns the Grit::Repo of the new repository.
     #
     # === Examples
-    #   # Note: that the _my_repo_ location may not exists before
     #   Repo.init('~/projects/foo')
-    #   #=> #<Grit::Repo "~/projects/foo/.git">
+    #   => #<Grit::Repo "~/projects/foo/.git">
+    #
     #   Repo.init('~/projects/bar.git', :bare => true)
-    #   #=> #<Grit::Repo "~/projects/bar.git">
+    #   => #<Grit::Repo "~/projects/bar.git">
     def self.init(my_repo, options = {})
       repo_path = File.expand_path(my_repo)
       bare_repo_path = options[:bare] ? repo_path : File.join(repo_path, '.git')
@@ -144,6 +184,29 @@ module Grit
     # Remove files from the index
     def remove(*files)
       self.git.rm({}, *files.flatten)
+    end
+
+    # Stages _files_ to be included in the next commit (see #commit_index).
+    #
+    # === Examples
+    #   repo.stage_files('README', 'foo', 'bar/')
+    def stage_files(*files)
+      self.git.add({}, *files)
+    end
+
+    # Unstages (staged) _files_ to *not* be included in the next commit (see #commit_index).
+    #
+    # === Examples
+    #   repo.unstage_files('README', 'bar/')
+    def unstage_files(*files)
+      commits = heads.inject(0) { |sum, head| sum + commit_count(head) }
+
+      if commits == 0
+        self.git.rm({:cached => true}, *files)
+      else
+        files = ['HEAD', '--'] + files
+        self.git.reset({}, *files)
+      end
     end
     
 
