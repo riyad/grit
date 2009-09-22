@@ -40,17 +40,19 @@ module Grit
     end
 
     # Clones _their_repo_ into _my_repo_.
-    # +options+ may include:
-    # <tt>:bare => true</tt> if it should only do a bare clone
+    # Note that the _my_repo_ location may not exists before.
+    #
+    # _options_ may include:
+    # [<tt>:bare => true</tt>] if it should only do a bare clone
     #
     # Returns the Grit::Repo of the cloned repository.
     #
     # === Examples
-    #   # Note: that the _my_repo_ location may not exists before
     #   Repo.clone('git://github.com/mojombo/grit.git', '~/projects/my_grit_clone')
-    #   #=> #<Grit::Repo "~/projects/my_grit_clone/.git">
+    #   => #<Grit::Repo "~/projects/my_grit_clone/.git">
+    #
     #   Repo.clone('git://github.com/mojombo/grit.git', '~/projects/my_grit_clone.git', :bare => true)
-    #   #=> #<Grit::Repo "~/projects/my_grit_clone.git">
+    #   => #<Grit::Repo "~/projects/my_grit_clone.git">
     def self.clone(their_repo, my_repo, options = {})
       repo_path = File.expand_path(my_repo)
       bare_repo_path = options[:bare] ? repo_path : File.join(repo_path, '.git')
@@ -64,17 +66,19 @@ module Grit
     end
 
     # Creates a fresh repository in _my_repo_.
-    # +options+ may include:
-    # <tt>:bare => true</tt> if it should do a bare init
+    # Note that the _my_repo_ location may not exists before.
+    #
+    # _options_ may include:
+    # [<tt>:bare => true</tt>] if it should do a bare init
     #
     # Returns the Grit::Repo of the new repository.
     #
     # === Examples
-    #   # Note: that the _my_repo_ location may not exists before
     #   Repo.init('~/projects/foo')
-    #   #=> #<Grit::Repo "~/projects/foo/.git">
+    #   => #<Grit::Repo "~/projects/foo/.git">
+    #
     #   Repo.init('~/projects/bar.git', :bare => true)
-    #   #=> #<Grit::Repo "~/projects/bar.git">
+    #   => #<Grit::Repo "~/projects/bar.git">
     def self.init(my_repo, options = {})
       repo_path = File.expand_path(my_repo)
       bare_repo_path = options[:bare] ? repo_path : File.join(repo_path, '.git')
