@@ -199,10 +199,14 @@ module Grit
     # === Examples
     #   repo.unstage_files('README', 'bar/')
     def unstage_files(*files)
-      # FIXME: needs to call self.git.rm({:cached => true}, *files) on first commit
+      commits = heads.inject(0) { |sum, head| sum + commit_count(head) }
 
-      files = ['HEAD', '--'] + files
-      self.git.reset({}, *files)
+      if commits == 0
+        self.git.rm({:cached => true}, *files)
+      else
+        files = ['HEAD', '--'] + files
+        self.git.reset({}, *files)
+      end
     end
     
 
