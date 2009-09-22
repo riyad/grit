@@ -185,6 +185,25 @@ module Grit
     def remove(*files)
       self.git.rm({}, *files.flatten)
     end
+
+    # Stages _files_ to be included in the next commit (see #commit_index).
+    #
+    # === Examples
+    #   repo.stage_files('README', 'foo', 'bar/')
+    def stage_files(*files)
+      self.git.add({}, *files)
+    end
+
+    # Unstages (staged) _files_ to *not* be included in the next commit (see #commit_index).
+    #
+    # === Examples
+    #   repo.unstage_files('README', 'bar/')
+    def unstage_files(*files)
+      # FIXME: needs to call self.git.rm({:cached => true}, *files) on first commit
+
+      files = ['HEAD', '--'] + files
+      self.git.reset({}, *files)
+    end
     
 
     def blame_tree(commit, path = nil)
