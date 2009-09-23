@@ -22,6 +22,18 @@ class TestStatus < Test::Unit::TestCase
     end
   end
 
+  def test_invocations
+    Git.any_instance.expects(:ls_files).with(:stage => true).returns('')
+    Git.any_instance.expects(:ls_files).with(:others => true).returns('')
+    Git.any_instance.expects(:ls_files).with(:others => true, :ignored => true, :exclude_standard => true).returns('')
+    Git.any_instance.expects(:diff_index).with({}, 'HEAD').returns('')
+    Git.any_instance.expects(:diff_files).with().returns('')
+
+    in_temp_repo do |r|
+      assert_not_nil(r.status)
+    end
+  end
+
   def test_new_file_has_status
     in_temp_repo do |g|
       new_file('untracked.txt', "foo\nbar\nbaz\n")
