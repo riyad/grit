@@ -115,6 +115,9 @@ module Grit
     #
     #   Repo.init('~/projects/bar.git', :bare => true)
     #   => #<Grit::Repo "~/projects/bar.git">
+    #
+    #   Repo.init("~/projects/baz.git", :bare => true, :template => "/baz/sweet")
+    #   => #<Grit::Repo "~/projects/baz.git">
     def self.init(my_repo, options = {})
       repo_path = File.expand_path(my_repo)
       bare_repo_path = options[:bare] ? repo_path : File.join(repo_path, '.git')
