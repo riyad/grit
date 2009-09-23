@@ -1,18 +1,20 @@
 require File.dirname(__FILE__) + '/helper'
 
 class TestStatus < Test::Unit::TestCase
-  def in_temp_repo
+  def temp_repo
     filename = "git_test#{Time.now.to_i.to_s}#{rand(300).to_s.rjust(3, '0')}"
     tmp_path = File.join("/tmp/", filename)
 
     repo = Grit::Repo.init(tmp_path)
     repo.commit_index('Empty inital commit.', :allow_empty => true)
 
-    Dir.chdir tmp_path do # for new_file() to work correctly
-      yield repo
-    end
+    repo
+  end
 
-    FileUtils.rm_r(tmp_path)
+  def in_temp_repo
+    repo = temp_repo
+    yield repo
+    FileUtils.rm_r(repo.working_dir)
   end
 
   def new_file(name, contents)
