@@ -44,6 +44,19 @@ class TestStatus < Test::Unit::TestCase
     @temp_repo_with_newly_added_file = repo
   end
 
+  def temp_repo_with_modified_file
+    return @temp_repo_with_modified_file if @temp_repo_with_modified_file
+
+    repo = temp_repo
+    Dir.chdir repo.working_dir do # for new_file() to work correctly
+      new_file('modified.txt', "foo\nbar")
+      repo.stage_files('modified.txt')
+      repo.commit_index("Committed file to be modified.")
+      new_file('modified.txt', "foo\nbar\nbaz\n")
+    end
+    @temp_repo_with_modified_file = repo
+  end
+
   # tests
 
   def test_invocations
@@ -175,106 +188,64 @@ class TestStatus < Test::Unit::TestCase
   end
 
   def test_modified_file_has_status
-    in_temp_repo do |g|
-      new_file('modified.txt', "foo\nbar")
-      g.stage_files('modified.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('modified.txt', "foo\nbar\nbaz\n")
+    r = temp_repo_with_modified_file
 
-      assert_not_nil(g.status['modified.txt'])
-    end
+    assert_not_nil(r.status['modified.txt'])
   end
 
   def test_modified_file_is_modified
-    in_temp_repo do |g|
-      new_file('modified.txt', "foo\nbar")
-      g.stage_files('modified.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('modified.txt', "foo\nbar\nbaz\n")
+    r = temp_repo_with_modified_file
+    s = r.status['modified.txt']
 
-      s = g.status['modified.txt']
-
-      assert(s.modified?)
-      assert_equal(:modified, s.status)
-    end
+    assert(s.modified?)
+    assert_equal(:modified, s.status)
   end
 
   def test_modified_file_is_unstaged
-    in_temp_repo do |g|
-      new_file('modified.txt', "foo\nbar")
-      g.stage_files('modified.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('modified.txt', "foo\nbar\nbaz\n")
+    r = temp_repo_with_modified_file
+    s = r.status['modified.txt']
 
-      s = g.status['modified.txt']
-
-      assert(!s.changes_staged?)
-      assert(s.changes_unstaged?)
-    end
+    assert(!s.changes_staged?)
+    assert(s.changes_unstaged?)
   end
 
   def test_modified_file_default_blob_is_file_blob
-    in_temp_repo do |g|
-      new_file('modified.txt', "foo\nbar")
-      g.stage_files('modified.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('modified.txt', "foo\nbar\nbaz\n")
+    r = temp_repo_with_modified_file
 
-      assert_equal(g.status['modified.txt'].blob(:file), g.status['modified.txt'].blob)
-    end
+    assert_equal(r.status['modified.txt'].blob(:file), r.status['modified.txt'].blob)
   end
 
   def test_modified_file_file_blob_is_correct
-    in_temp_repo do |g|
-      new_file('modified.txt', "foo\nbar")
-      g.stage_files('modified.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('modified.txt', "foo\nbar\nbaz\n")
+    r = temp_repo_with_modified_file
 
-      assert_equal("foo\nbar\nbaz\n", g.status['modified.txt'].blob(:file))
-    end
+    assert_equal("foo\nbar\nbaz\n", r.status['modified.txt'].blob(:file))
   end
 
   def test_modified_file_index_blob_is_correct
-    in_temp_repo do |g|
-      new_file('modified.txt', "foo\nbar")
-      g.stage_files('modified.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('modified.txt', "foo\nbar\nbaz\n")
+    r = temp_repo_with_modified_file
 
-      assert_equal("foo\nbar", g.status['modified.txt'].blob(:index).data)
-    end
+    assert_equal("foo\nbar", r.status['modified.txt'].blob(:index).data)
   end
 
   def test_modified_file_repo_blob_is_correct
-    in_temp_repo do |g|
-      new_file('modified.txt', "foo\nbar")
-      g.stage_files('modified.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('modified.txt', "foo\nbar\nbaz\n")
+    r = temp_repo_with_modified_file
 
-      assert_equal("foo\nbar", g.status['modified.txt'].blob(:repo).data)
-    end
+    assert_equal("foo\nbar", r.status['modified.txt'].blob(:repo).data)
   end
 
   def test_modified_file_uncached_diff_is_correct
-    in_temp_repo do |g|
-      new_file('modified.txt', "foo\nbar")
-      g.stage_files('modified.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('modified.txt', "foo\nbar\nbaz\n")
+    r = temp_repo_with_modified_file
 
-      d = g.status['modified.txt'].diff
+    d = r.status['modified.txt'].diff
 
-      assert_not_nil(d)
-      assert_equal('modified.txt', d.a_path)
-      assert_equal('modified.txt', d.b_path)
-      assert(!d.new_file)
-      assert(!d.deleted_file)
-      assert_equal('a907ec3', d.a_sha)
-      assert_equal('86e041d', d.b_sha)
-      assert_equal("--- a/modified.txt\n+++ b/modified.txt\n@@ -1,2 +1,3 @@\n foo\n-bar\n\\ No newline at end of file\n+bar\n+baz\n", d.diff)
-    end
+    assert_not_nil(d)
+    assert_equal('modified.txt', d.a_path)
+    assert_equal('modified.txt', d.b_path)
+    assert(!d.new_file)
+    assert(!d.deleted_file)
+    assert_equal('a907ec3', d.a_sha)
+    assert_equal('86e041d', d.b_sha)
+    assert_equal("--- a/modified.txt\n+++ b/modified.txt\n@@ -1,2 +1,3 @@\n foo\n-bar\n\\ No newline at end of file\n+bar\n+baz\n", d.diff)
   end
 
   def test_updated_file_has_status
