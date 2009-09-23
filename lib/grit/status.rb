@@ -199,8 +199,7 @@ module Grit
 
       def ls_files
         hsh = {}
-        lines = @base.git.ls_files({:stage => true})
-        lines.split("\n").each do |line|
+        @base.git.ls_files({:stage => true}).split("\n").each do |line|
           (info, file) = line.split("\t")
           (mode, sha, stage) = info.split
           hsh[file] = {:path => file, :mode_index => mode, :sha_index => sha, :stage => stage}
@@ -214,7 +213,7 @@ module Grit
       end
 
       def ignored_files
-        @base.git.ls_files({:others => true, :i => true, :exclude_standard => true}).split("\n")
+        @base.git.ls_files({:others => true, :ignored => true, :exclude_standard => true}).split("\n")
       end
   end
   
