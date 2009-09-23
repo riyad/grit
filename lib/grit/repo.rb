@@ -165,11 +165,16 @@ module Grit
     end
 
 
-    # Commits current index
+    # Commits the current index with the given _message_.
     #
-    # Returns true/false if commit worked
-    def commit_index(message)
-      self.git.commit({}, '-m', message)
+    # Returns +true+ if commit worked and +false+ otherwise.
+    #
+    # === Examples
+    #   git.commit_index('Added some fancy feature.')
+    #   git.commit_index('Empty commit.', :allow_empty => true)
+    #   git.commit_index('Fixed a bug.', :amend => true)
+    def commit_index(message, options = {})
+      self.git.commit(options, '-m', message)
     end
 
     # Commits all tracked and modified files
