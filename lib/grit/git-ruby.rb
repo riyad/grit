@@ -49,7 +49,7 @@ module Grit
     def diff(options, a_sha, b_sha, *files)
       allowed_options = [:full_index]
       if (options.keys - allowed_options).size == 0 && files.empty?
-        try_run { ruby_git.diff(sha1, sha2, options) }
+        try_run { ruby_git.diff(a_sha, b_sha, options) }
       else
         args = []
         args << a_sha unless a_sha.nil?
