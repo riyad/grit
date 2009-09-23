@@ -71,6 +71,19 @@ class TestStatus < Test::Unit::TestCase
     @temp_repo_with_updated_file = repo
   end
 
+  def temp_repo_with_removed_file
+    return @temp_repo_with_removed_file if @temp_repo_with_removed_file
+
+    repo = temp_repo
+    Dir.chdir repo.working_dir do # for new_file() to work correctly
+      new_file('removed.txt', "foo\nbar\nbaz\n")
+      repo.stage_files('removed.txt')
+      repo.commit_index("Added file to be deleted.")
+      repo.remove('removed.txt') # also stages the changes
+    end
+    @temp_repo_with_removed_file = repo
+  end
+
   # tests
 
   def test_invocations
@@ -324,106 +337,63 @@ class TestStatus < Test::Unit::TestCase
   end
 
   def test_removed_file_has_status
-    in_temp_repo do |g|
-      new_file('removed.txt', "foo\nbar\nbaz\n")
-      r.stage_files('removed.txt')
-      r.commit_index("Added file to be deleted.")
-      r.remove('removed.txt') # also stages the changes
+    r = temp_repo_with_removed_file
 
-      assert_not_nil(r.status['removed.txt'])
-    end
+    assert_not_nil(r.status['removed.txt'])
   end
 
   def test_removed_file_is_deleted
-    in_temp_repo do |g|
-      new_file('removed.txt', "foo\nbar\nbaz\n")
-      r.stage_files('removed.txt')
-      r.commit_index("Added file to be deleted.")
-      r.remove('removed.txt') # also stages the changes
+    r = temp_repo_with_removed_file
+    s = r.status['removed.txt']
 
-      s = r.status['removed.txt']
-
-      assert(s.deleted?)
-      assert_equal(:deleted, s.status)
-    end
+    assert(s.deleted?)
+    assert_equal(:deleted, s.status)
   end
 
   def test_removed_file_is_staged
-    in_temp_repo do |g|
-      new_file('removed.txt', "foo\nbar\nbaz\n")
-      r.stage_files('removed.txt')
-      r.commit_index("Added file to be deleted.")
-      r.remove('removed.txt') # also stages the changes
+    r = temp_repo_with_removed_file
+    s = r.status['removed.txt']
 
-      s = r.status['removed.txt']
-
-      assert(s.changes_staged?)
-      assert(!s.changes_unstaged?)
-    end
+    assert(s.changes_staged?)
+    assert(!s.changes_unstaged?)
   end
 
   def test_removed_file_default_blob_is_index_blob
-    in_temp_repo do |g|
-      new_file('removed.txt', "foo\nbar\nbaz\n")
-      r.stage_files('removed.txt')
-      r.commit_index("Added file to be deleted.")
-      r.remove('removed.txt') # also stages the changes
+    r = temp_repo_with_removed_file
 
-      assert_equal(r.status['removed.txt'].blob(:index), r.status['removed.txt'].blob)
-    end
+    assert_equal(r.status['removed.txt'].blob(:index), r.status['removed.txt'].blob)
   end
 
   def test_removed_file_file_blob_is_empty
-    in_temp_repo do |g|
-      new_file('removed.txt', "foo\nbar\nbaz\n")
-      r.stage_files('removed.txt')
-      r.commit_index("Added file to be deleted.")
-      r.remove('removed.txt') # also stages the changes
+    r = temp_repo_with_removed_file
 
-      assert_nil(r.status['removed.txt'].blob(:file))
-    end
+    assert_nil(r.status['removed.txt'].blob(:file))
   end
 
   def test_removed_file_index_blob_is_empty
-    in_temp_repo do |g|
-      new_file('removed.txt', "foo\nbar\nbaz\n")
-      r.stage_files('removed.txt')
-      r.commit_index("Added file to be deleted.")
-      r.remove('removed.txt') # also stages the changes
+    r = temp_repo_with_removed_file
 
-      assert_nil(r.status['removed.txt'].blob(:index))
-    end
+    assert_nil(r.status['removed.txt'].blob(:index))
   end
 
   def test_removed_file_repo_blob_is_correct
-    in_temp_repo do |g|
-      new_file('removed.txt', "foo\nbar\nbaz\n")
-      r.stage_files('removed.txt')
-      r.commit_index("Added file to be deleted.")
-      r.remove('removed.txt') # also stages the changes
+    r = temp_repo_with_removed_file
 
-      assert_equal("foo\nbar\nbaz\n", r.status['removed.txt'].blob(:repo).data)
-    end
+    assert_equal("foo\nbar\nbaz\n", r.status['removed.txt'].blob(:repo).data)
   end
 
   def test_removed_file_diff_is_correct
-    in_temp_repo do |g|
-      new_file('removed.txt', "foo\nbar\nbaz\n")
-      r.stage_files('removed.txt')
-      r.commit_index("Added file to be deleted.")
-      r.remove('removed.txt') # also stages the changes
+    r = temp_repo_with_removed_file
+    d = r.status['removed.txt'].diff
 
-      d = r.status['removed.txt'].diff
-
-      assert_not_nil(d)
-      assert_equal('removed.txt', d.a_path)
-      assert_equal('removed.txt', d.b_path)
-      assert(!d.new_file)
-      assert(d.deleted_file)
-      assert_equal('86e041d', d.a_sha)
-      assert_nil(d.b_sha)
-      assert_equal("--- a/removed.txt\n+++ /dev/null\n@@ -1,3 +0,0 @@\n-foo\n-bar\n-baz\n", d.diff)
-    end
+    assert_not_nil(d)
+    assert_equal('removed.txt', d.a_path)
+    assert_equal('removed.txt', d.b_path)
+    assert(!d.new_file)
+    assert(d.deleted_file)
+    assert_equal('86e041d', d.a_sha)
+    assert_nil(d.b_sha)
+    assert_equal("--- a/removed.txt\n+++ /dev/null\n@@ -1,3 +0,0 @@\n-foo\n-bar\n-baz\n", d.diff)
   end
 
   def test_deleted_file_has_status
