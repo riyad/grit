@@ -33,6 +33,19 @@ class TestStatus < Test::Unit::TestCase
     @temp_repo_with_new_file = repo
   end
 
+  def temp_repo_with_newly_added_file
+    return @temp_repo_with_newly_added_file if @temp_repo_with_newly_added_file
+
+    repo = temp_repo
+    Dir.chdir repo.working_dir do # for new_file() to work correctly
+      new_file('newly_added.txt', "foo\nbar\nbaz\n")
+      repo.stage_files('newly_added.txt')
+    end
+    @temp_repo_with_newly_added_file = repo
+  end
+
+  # tests
+
   def test_invocations
     Git.any_instance.expects(:ls_files).with(:stage => true).returns('')
     Git.any_instance.expects(:ls_files).with(:others => true).returns('')
@@ -99,90 +112,66 @@ class TestStatus < Test::Unit::TestCase
   end
 
   def test_newly_added_file_has_status
-    in_temp_repo do |g|
-      new_file('newly_added.txt', "foo\nbar\nbaz\n")
-      g.stage_files('newly_added.txt')
+    r = temp_repo_with_newly_added_file
 
-      assert_not_nil(g.status['newly_added.txt'])
-    end
+    assert_not_nil(r.status['newly_added.txt'])
   end
 
   def test_newly_added_file_is_added
-    in_temp_repo do |g|
-      new_file('newly_added.txt', "foo\nbar\nbaz\n")
-      g.stage_files('newly_added.txt')
+    r = temp_repo_with_newly_added_file
 
-      s = g.status['newly_added.txt']
+    s = r.status['newly_added.txt']
 
-      assert(s.added?)
-      assert_equal(:added, s.status)
-    end
+    assert(s.added?)
+    assert_equal(:added, s.status)
   end
 
   def test_newly_added_file_is_staged
-    in_temp_repo do |g|
-      new_file('newly_added.txt', "foo\nbar\nbaz\n")
-      g.stage_files('newly_added.txt')
+    r = temp_repo_with_newly_added_file
 
-      s = g.status['newly_added.txt']
+    s = r.status['newly_added.txt']
 
-      assert(s.changes_staged?)
-      assert(!s.changes_unstaged?)
-    end
+    assert(s.changes_staged?)
+    assert(!s.changes_unstaged?)
   end
 
   def test_newly_added_file_default_blob_is_index_blob
-    in_temp_repo do |g|
-      new_file('newly_added.txt', "foo\nbar\nbaz\n")
-      g.stage_files('newly_added.txt')
+    r = temp_repo_with_newly_added_file
 
-      assert_equal(g.status['newly_added.txt'].blob(:index).data, g.status['newly_added.txt'].blob.data)
-    end
+    assert_equal(r.status['newly_added.txt'].blob(:index).data, r.status['newly_added.txt'].blob.data)
   end
 
   def test_newly_added_file_file_blob_is_correct
-    in_temp_repo do |g|
-      new_file('newly_added.txt', "foo\nbar\nbaz\n")
-      g.stage_files('newly_added.txt')
+    r = temp_repo_with_newly_added_file
 
-      assert_equal("foo\nbar\nbaz\n", g.status['newly_added.txt'].blob(:file))
-    end
+    assert_equal("foo\nbar\nbaz\n", r.status['newly_added.txt'].blob(:file))
   end
 
   def test_newly_added_file_index_blob_is_correct
-    in_temp_repo do |g|
-      new_file('newly_added.txt', "foo\nbar\nbaz\n")
-      g.stage_files('newly_added.txt')
+    r = temp_repo_with_newly_added_file
 
-      assert_equal("foo\nbar\nbaz\n", g.status['newly_added.txt'].blob(:index).data)
-    end
+    assert_equal("foo\nbar\nbaz\n", r.status['newly_added.txt'].blob(:index).data)
   end
 
   def test_newly_added_file_repo_blob_is_empty
-    in_temp_repo do |g|
-      new_file('newly_added.txt', "foo\nbar\nbaz\n")
-      g.stage_files('newly_added.txt')
+    r = temp_repo_with_newly_added_file
 
-      assert_nil(g.status['newly_added.txt'].blob(:repo))
-    end
+    assert_nil(r.status['newly_added.txt'].blob(:repo))
   end
 
   def test_newly_added_file_diff_is_correct
-    in_temp_repo do |g|
-      new_file('newly_added.txt', "foo\nbar\nbaz\n")
-      g.stage_files('newly_added.txt')
+    r = temp_repo_with_newly_added_file
 
-      d = g.status['newly_added.txt'].diff
+    d = r.status['newly_added.txt'].diff
 
-      assert_not_nil(d)
-      assert_equal('newly_added.txt', d.a_path)
-      assert_equal('newly_added.txt', d.b_path)
-      assert(d.new_file)
-      assert(!d.deleted_file)
-      assert_nil(d.a_sha)
-      assert_equal('86e041d', d.b_sha)
-      assert_equal("--- /dev/null\n+++ b/newly_added.txt\n@@ -0,0 +1,3 @@\n+foo\n+bar\n+baz\n", d.diff)
-    end
+    assert_not_nil(d)
+    assert_equal('newly_added.txt', d.a_path)
+    assert_equal('newly_added.txt', d.b_path)
+    assert(d.new_file)
+    assert(!d.deleted_file)
+    assert_nil(d.a_sha)
+    assert_equal('86e041d', d.b_sha)
+    assert_equal("--- /dev/null\n+++ b/newly_added.txt\n@@ -0,0 +1,3 @@\n+foo\n+bar\n+baz\n", d.diff)
   end
 
   def test_modified_file_has_status
