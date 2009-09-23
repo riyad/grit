@@ -23,6 +23,16 @@ class TestStatus < Test::Unit::TestCase
     end
   end
 
+  def temp_repo_with_new_file
+    return @temp_repo_with_new_file if @temp_repo_with_new_file
+
+    repo = temp_repo
+    Dir.chdir repo.working_dir do # for new_file() to work correctly
+      new_file('untracked.txt', "foo\nbar\nbaz\n")
+    end
+    @temp_repo_with_new_file = repo
+  end
+
   def test_invocations
     Git.any_instance.expects(:ls_files).with(:stage => true).returns('')
     Git.any_instance.expects(:ls_files).with(:others => true).returns('')
@@ -36,72 +46,56 @@ class TestStatus < Test::Unit::TestCase
   end
 
   def test_new_file_has_status
-    in_temp_repo do |g|
-      new_file('untracked.txt', "foo\nbar\nbaz\n")
+    r = temp_repo_with_new_file
 
-      assert_not_nil(g.status['untracked.txt'])
-    end
+    assert_not_nil(r.status['untracked.txt'])
   end
 
   def test_new_file_is_untracked
-    in_temp_repo do |g|
-      new_file('untracked.txt', "foo\nbar\nbaz\n")
-      s = g.status['untracked.txt']
+    r = temp_repo_with_new_file
+    s = r.status['untracked.txt']
 
-      assert(s.untracked?)
-      assert_equal(:untracked, s.status)
-    end
+    assert(s.untracked?)
+    assert_equal(:untracked, s.status)
   end
 
   def test_new_file_is_unstaged
-    in_temp_repo do |g|
-      new_file('untracked.txt', "foo\nbar\nbaz\n")
-      s = g.status['untracked.txt']
+    r = temp_repo_with_new_file
+    s = r.status['untracked.txt']
 
-      assert(!s.changes_staged?)
-      assert(s.changes_unstaged?)
-    end
+    assert(!s.changes_staged?)
+    assert(s.changes_unstaged?)
   end
 
   def test_new_file_default_blob_is_file_blob
-    in_temp_repo do |g|
-      new_file('untracked.txt', "foo\nbar\nbaz\n")
+    r = temp_repo_with_new_file
 
-      assert_equal(g.status['untracked.txt'].blob(:file), g.status['untracked.txt'].blob)
-    end
+    assert_equal(r.status['untracked.txt'].blob(:file), r.status['untracked.txt'].blob)
   end
 
   def test_new_file_file_blob_is_correct
-    in_temp_repo do |g|
-      new_file('untracked.txt', "foo\nbar\nbaz\n")
+    r = temp_repo_with_new_file
 
-      assert_equal("foo\nbar\nbaz\n", g.status['untracked.txt'].blob(:file))
-    end
+    assert_equal("foo\nbar\nbaz\n", r.status['untracked.txt'].blob(:file))
   end
 
   def test_new_file_index_blob_is_empty
-    in_temp_repo do |g|
-      new_file('untracked.txt', "foo\nbar\nbaz\n")
+    r = temp_repo_with_new_file
 
-      assert_nil(g.status['untracked.txt'].blob(:index))
-    end
+    assert_nil(r.status['untracked.txt'].blob(:index))
   end
 
   def test_new_file_repo_blob_is_empty
-    in_temp_repo do |g|
-      new_file('untracked.txt', "foo\nbar\nbaz\n")
+    r = temp_repo_with_new_file
 
-      assert_nil(g.status['untracked.txt'].blob(:repo))
-    end
+    assert_nil(r.status['untracked.txt'].blob(:repo))
   end
 
   def test_new_file_has_no_diff
-    in_temp_repo do |g|
-      new_file('untracked.txt', "foo\nbar\nbaz\n")
-      s = g.status['untracked.txt']
+    r = temp_repo_with_new_file
+    s = r.status['untracked.txt']
 
-      assert_nil(s.diff)
-    end
+    assert_nil(s.diff)
   end
 
   def test_newly_added_file_has_status
