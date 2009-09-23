@@ -69,7 +69,8 @@ module Grit
 
         case type
         when :file
-          File.read(path) if File.exist?(path)
+          file_path = File.join(@base.working_dir, path)
+          File.read(file_path) if File.exist?(file_path)
         when :index
           @base.blob(sha_index) if sha_index
         when :repo
