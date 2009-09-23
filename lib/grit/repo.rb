@@ -115,6 +115,9 @@ module Grit
     #
     #   Repo.init('~/projects/bar.git', :bare => true)
     #   => #<Grit::Repo "~/projects/bar.git">
+    #
+    #   Repo.init("~/projects/baz.git", :bare => true, :template => "/baz/sweet")
+    #   => #<Grit::Repo "~/projects/baz.git">
     def self.init(my_repo, options = {})
       repo_path = File.expand_path(my_repo)
       bare_repo_path = options[:bare] ? repo_path : File.join(repo_path, '.git')
@@ -162,11 +165,16 @@ module Grit
     end
 
 
-    # Commits current index
+    # Commits the current index with the given _message_.
     #
-    # Returns true/false if commit worked
-    def commit_index(message)
-      self.git.commit({}, '-m', message)
+    # Returns +true+ if commit worked and +false+ otherwise.
+    #
+    # === Examples
+    #   git.commit_index('Added some fancy feature.')
+    #   git.commit_index('Empty commit.', :allow_empty => true)
+    #   git.commit_index('Fixed a bug.', :amend => true)
+    def commit_index(message, options = {})
+      self.git.commit(options, '-m', message)
     end
 
     # Commits all tracked and modified files
@@ -199,7 +207,7 @@ module Grit
     # === Examples
     #   repo.unstage_files('README', 'bar/')
     def unstage_files(*files)
-      commits = heads.inject(0) { |sum, head| sum + commit_count(head) }
+      commits = heads.inject(0) { |sum, head| sum + commit_count(head.commit.to_s) }
 
       if commits == 0
         self.git.rm({:cached => true}, *files)
