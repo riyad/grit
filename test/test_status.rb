@@ -84,6 +84,19 @@ class TestStatus < Test::Unit::TestCase
     @temp_repo_with_removed_file = repo
   end
 
+  def temp_repo_with_deleted_file
+    return @temp_repo_with_deleted_file if @temp_repo_with_deleted_file
+
+    repo = temp_repo
+    Dir.chdir repo.working_dir do # for new_file() to work correctly
+      new_file('deleted.txt', "foo\nbar\nbaz\n")
+      repo.stage_files('deleted.txt')
+      repo.commit_index("Added file to be deleted.")
+      FileUtils.rm('deleted.txt')
+    end
+    @temp_repo_with_deleted_file = repo
+  end
+
   # tests
 
   def test_invocations
@@ -397,106 +410,63 @@ class TestStatus < Test::Unit::TestCase
   end
 
   def test_deleted_file_has_status
-    in_temp_repo do |g|
-      new_file('deleted.txt', "foo\nbar\nbaz\n")
-      r.stage_files('deleted.txt')
-      r.commit_index("Added file to be deleted.")
-      FileUtils.rm('deleted.txt')
+    r = temp_repo_with_deleted_file
 
-      assert_not_nil(r.status['deleted.txt'])
-    end
+    assert_not_nil(r.status['deleted.txt'])
   end
 
   def test_deleted_file_is_deleted
-    in_temp_repo do |g|
-      new_file('deleted.txt', "foo\nbar\nbaz\n")
-      r.stage_files('deleted.txt')
-      r.commit_index("Added file to be deleted.")
-      FileUtils.rm('deleted.txt')
+    r = temp_repo_with_deleted_file
+    s = r.status['deleted.txt']
 
-      s = r.status['deleted.txt']
-
-      assert(s.deleted?)
-      assert_equal(:deleted, s.status)
-    end
+    assert(s.deleted?)
+    assert_equal(:deleted, s.status)
   end
 
   def test_deleted_file_is_unstaged
-    in_temp_repo do |g|
-      new_file('deleted.txt', "foo\nbar\nbaz\n")
-      r.stage_files('deleted.txt')
-      r.commit_index("Added file to be deleted.")
-      FileUtils.rm('deleted.txt')
+    r = temp_repo_with_deleted_file
+    s = r.status['deleted.txt']
 
-      s = r.status['deleted.txt']
-
-      assert(!s.changes_staged?)
-      assert(s.changes_unstaged?)
-    end
+    assert(!s.changes_staged?)
+    assert(s.changes_unstaged?)
   end
 
   def test_deleted_file_default_blob_is_file_blob
-    in_temp_repo do |g|
-      new_file('deleted.txt', "foo\nbar\nbaz\n")
-      r.stage_files('deleted.txt')
-      r.commit_index("Added file to be deleted.")
-      FileUtils.rm('deleted.txt')
+    r = temp_repo_with_deleted_file
 
-      assert_equal(r.status['deleted.txt'].blob(:file), r.status['deleted.txt'].blob)
-    end
+    assert_equal(r.status['deleted.txt'].blob(:file), r.status['deleted.txt'].blob)
   end
 
   def test_deleted_file_file_blob_is_empty
-    in_temp_repo do |g|
-      new_file('deleted.txt', "foo\nbar\nbaz\n")
-      r.stage_files('deleted.txt')
-      r.commit_index("Added file to be deleted.")
-      FileUtils.rm('deleted.txt')
+    r = temp_repo_with_deleted_file
 
-      assert_nil(r.status['deleted.txt'].blob(:file))
-    end
+    assert_nil(r.status['deleted.txt'].blob(:file))
   end
 
   def test_deleted_file_index_blob_is_correct
-    in_temp_repo do |g|
-      new_file('deleted.txt', "foo\nbar\nbaz\n")
-      r.stage_files('deleted.txt')
-      r.commit_index("Added file to be deleted.")
-      FileUtils.rm('deleted.txt')
+    r = temp_repo_with_deleted_file
 
-      assert_equal("foo\nbar\nbaz\n", r.status['deleted.txt'].blob(:index).data)
-    end
+    assert_equal("foo\nbar\nbaz\n", r.status['deleted.txt'].blob(:index).data)
   end
 
   def test_deleted_file_repo_blob_is_correct
-    in_temp_repo do |g|
-      new_file('deleted.txt', "foo\nbar\nbaz\n")
-      r.stage_files('deleted.txt')
-      r.commit_index("Added file to be deleted.")
-      FileUtils.rm('deleted.txt')
+    r = temp_repo_with_deleted_file
 
-      assert_equal("foo\nbar\nbaz\n", r.status['deleted.txt'].blob(:repo).data)
-    end
+    assert_equal("foo\nbar\nbaz\n", r.status['deleted.txt'].blob(:repo).data)
   end
 
   def test_deleted_file_diff_is_correct
-    in_temp_repo do |g|
-      new_file('deleted.txt', "foo\nbar\nbaz\n")
-      r.stage_files('deleted.txt')
-      r.commit_index("Added file to be deleted.")
-      FileUtils.rm('deleted.txt')
+    r = temp_repo_with_deleted_file
+    d = r.status['deleted.txt'].diff
 
-      d = r.status['deleted.txt'].diff
-
-      assert_not_nil(d)
-      assert_equal('deleted.txt', d.a_path)
-      assert_equal('deleted.txt', d.b_path)
-      assert(!d.new_file)
-      assert(d.deleted_file)
-      assert_equal('86e041d', d.a_sha)
-      assert_nil(d.b_sha)
-      assert_equal("--- a/deleted.txt\n+++ /dev/null\n@@ -1,3 +0,0 @@\n-foo\n-bar\n-baz\n", d.diff)
-    end
+    assert_not_nil(d)
+    assert_equal('deleted.txt', d.a_path)
+    assert_equal('deleted.txt', d.b_path)
+    assert(!d.new_file)
+    assert(d.deleted_file)
+    assert_equal('86e041d', d.a_sha)
+    assert_nil(d.b_sha)
+    assert_equal("--- a/deleted.txt\n+++ /dev/null\n@@ -1,3 +0,0 @@\n-foo\n-bar\n-baz\n", d.diff)
   end
 
   def test_remodified_file_has_status
