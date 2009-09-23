@@ -199,7 +199,7 @@ module Grit
     # === Examples
     #   repo.unstage_files('README', 'bar/')
     def unstage_files(*files)
-      commits = heads.inject(0) { |sum, head| sum + commit_count(head) }
+      commits = heads.inject(0) { |sum, head| sum + commit_count(head.commit.to_s) }
 
       if commits == 0
         self.git.rm({:cached => true}, *files)
