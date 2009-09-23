@@ -112,6 +112,18 @@ class TestStatus < Test::Unit::TestCase
     @temp_repo_with_remodified_file = repo
   end
 
+  def temp_repo_with_modified_added_file
+    return @temp_repo_with_modified_added_file if @temp_repo_with_modified_added_file
+
+    repo = temp_repo
+    Dir.chdir repo.working_dir do # for new_file() to work correctly
+      new_file('modified_added.txt', "foo")
+      repo.stage_files('modified_added.txt')
+      new_file('modified_added.txt', "foo\nbar\n")
+    end
+    @temp_repo_with_modified_added_file = repo
+  end
+
   # tests
 
   def test_invocations
@@ -559,112 +571,77 @@ class TestStatus < Test::Unit::TestCase
   end
 
   def test_modified_added_file_has_status
-    in_temp_repo do |g|
-      new_file('modified_added.txt', "foo")
-      r.stage_files('modified_added.txt')
-      new_file('modified_added.txt', "foo\nbar\n")
+    r = temp_repo_with_modified_added_file
+    s = r.status['modified_added.txt']
 
-      s = r.status['modified_added.txt']
-
-      assert_not_nil(s)
-      assert_kind_of(Array, s)
-      assert_equal(2, s.size)
-    end
+    assert_not_nil(s)
+    assert_kind_of(Array, s)
+    assert_equal(2, s.size)
   end
 
   def test_modified_added_file_is_added_and_modified
-    in_temp_repo do |g|
-      new_file('modified_added.txt', "foo")
-      r.stage_files('modified_added.txt')
-      new_file('modified_added.txt', "foo\nbar\n")
+    r = temp_repo_with_modified_added_file
+    s = r.status['modified_added.txt']
 
-      s = r.status['modified_added.txt']
-
-      assert(s.any?(&:added?))
-      assert(s.any?(&:modified?))
-    end
+    assert(s.any?(&:added?))
+    assert(s.any?(&:modified?))
   end
 
   def test_modified_added_file_is_staged_and_unstaged
-    in_temp_repo do |g|
-      new_file('modified_added.txt', "foo")
-      r.stage_files('modified_added.txt')
-      new_file('modified_added.txt', "foo\nbar\n")
+    r = temp_repo_with_modified_added_file
+    s = r.status['modified_added.txt']
 
-      s = r.status['modified_added.txt']
-
-      assert(s.any?(&:changes_staged?))
-      assert(s.any?(&:changes_unstaged?))
-    end
+    assert(s.any?(&:changes_staged?))
+    assert(s.any?(&:changes_unstaged?))
   end
 
   def test_unstaged_modified_added_file_blobs_are_correct
-    in_temp_repo do |g|
-      new_file('modified_added.txt', "foo")
-      r.stage_files('modified_added.txt')
-      new_file('modified_added.txt', "foo\nbar\n")
+    r = temp_repo_with_modified_added_file
+    s = r.status['modified_added.txt'].select(&:changes_unstaged?).first
 
-      s = r.status['modified_added.txt'].select(&:changes_unstaged?).first
-
-      assert_equal(s.blob(:file), s.blob)
-      assert_equal("foo\nbar\n", s.blob(:file))
-      assert_equal("foo", s.blob(:index).data)
-      assert_equal("foo", s.blob(:repo).data)
-    end
+    assert_equal(s.blob(:file), s.blob)
+    assert_equal("foo\nbar\n", s.blob(:file))
+    assert_equal("foo", s.blob(:index).data)
+    assert_equal("foo", s.blob(:repo).data)
   end
 
   def test_staged_modified_added_file_blobs_are_correct
-    in_temp_repo do |g|
-      new_file('modified_added.txt', "foo")
-      r.stage_files('modified_added.txt')
-      new_file('modified_added.txt', "foo\nbar\n")
+    r = temp_repo_with_modified_added_file
+    s = r.status['modified_added.txt'].select(&:changes_staged?).first
 
-      s = r.status['modified_added.txt'].select(&:changes_staged?).first
-
-      assert_equal(s.blob(:index), s.blob)
-      assert_equal("foo\nbar\n", s.blob(:file))
-      assert_nil(s.blob(:index))
-      assert_nil(s.blob(:repo))
-    end
+    assert_equal(s.blob(:index), s.blob)
+    assert_equal("foo\nbar\n", s.blob(:file))
+    assert_nil(s.blob(:index))
+    assert_nil(s.blob(:repo))
   end
 
   def test_unstaged_modified_added_file_diff_is_correct
-    in_temp_repo do |g|
-      new_file('modified_added.txt', "foo")
-      r.stage_files('modified_added.txt')
-      new_file('modified_added.txt', "foo\nbar\n")
+    r = temp_repo_with_modified_added_file
+    s = r.status['modified_added.txt'].select(&:changes_unstaged?).first
+    d = s.diff
 
-      s = r.status['modified_added.txt'].select(&:changes_unstaged?).first
-      d = s.diff
-
-      assert_not_nil(d)
-      assert_equal('modified_added.txt', d.a_path)
-      assert_equal('modified_added.txt', d.b_path)
-      assert(!d.new_file)
-      assert(!d.deleted_file)
-      assert_equal('1910281', d.a_sha)
-      assert_equal('3bd1f0e', d.b_sha)
-      assert_equal("--- a/modified_added.txt\n+++ b/modified_added.txt\n@@ -1 +1,2 @@\n-foo\n\\ No newline at end of file\n+foo\n+bar\n", d.diff)
-    end
+    assert_not_nil(d)
+    assert_equal('modified_added.txt', d.a_path)
+    assert_equal('modified_added.txt', d.b_path)
+    assert(!d.new_file)
+    assert(!d.deleted_file)
+    assert_equal('1910281', d.a_sha)
+    assert_equal('3bd1f0e', d.b_sha)
+    assert_equal("--- a/modified_added.txt\n+++ b/modified_added.txt\n@@ -1 +1,2 @@\n-foo\n\\ No newline at end of file\n+foo\n+bar\n", d.diff)
   end
 
   def test_staged_modified_added_file_diff_is_correct
-    in_temp_repo do |g|
-      new_file('modified_added.txt', "foo")
-      r.stage_files('modified_added.txt')
-      new_file('modified_added.txt', "foo\nbar\n")
+    r = temp_repo_with_modified_added_file
+    s = r.status['modified_added.txt'].select(&:changes_staged?).first
+    d = s.diff
 
-      s = r.status['modified_added.txt'].select(&:changes_staged?).first
-      d = s.diff
-
-      assert_not_nil(d)
-      assert_equal('modified_added.txt', d.a_path)
-      assert_equal('modified_added.txt', d.b_path)
-      assert(d.new_file)
-      assert(!d.deleted_file)
-      assert_nil(d.a_sha)
-      assert_equal('1910281', d.b_sha)
-      assert_equal("--- /dev/null\n+++ b/modified_added.txt\n@@ -0,0 +1 @@\n+foo\n\\ No newline at end of file\n", d.diff)
-    end
+    assert_not_nil(d)
+    assert_equal('modified_added.txt', d.a_path)
+    assert_equal('modified_added.txt', d.b_path)
+    assert(d.new_file)
+    assert(!d.deleted_file)
+    assert_nil(d.a_sha)
+    assert_equal('1910281', d.b_sha)
+    assert_equal("--- /dev/null\n+++ b/modified_added.txt\n@@ -0,0 +1 @@\n+foo\n\\ No newline at end of file\n", d.diff)
   end
 end
