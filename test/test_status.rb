@@ -57,6 +57,20 @@ class TestStatus < Test::Unit::TestCase
     @temp_repo_with_modified_file = repo
   end
 
+  def temp_repo_with_updated_file
+    return @temp_repo_with_updated_file if @temp_repo_with_updated_file
+
+    repo = temp_repo
+    Dir.chdir repo.working_dir do # for new_file() to work correctly
+      new_file('updated.txt', "foo\nbar")
+      repo.stage_files('updated.txt')
+      repo.commit_index("Committed file to be modified.")
+      new_file('updated.txt', "foo\nbar\nbaz\n")
+      repo.stage_files('updated.txt')
+    end
+    @temp_repo_with_updated_file = repo
+  end
+
   # tests
 
   def test_invocations
@@ -249,135 +263,85 @@ class TestStatus < Test::Unit::TestCase
   end
 
   def test_updated_file_has_status
-    in_temp_repo do |g|
-      new_file('updated.txt', "foo\nbar")
-      g.stage_files('updated.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('updated.txt', "foo\nbar\nbaz\n")
-      g.stage_files('updated.txt')
+    r = temp_repo_with_updated_file
 
-      assert_not_nil(g.status['updated.txt'])
-    end
+    assert_not_nil(r.status['updated.txt'])
   end
 
   def test_updated_file_is_modified
-    in_temp_repo do |g|
-      new_file('updated.txt', "foo\nbar")
-      g.stage_files('updated.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('updated.txt', "foo\nbar\nbaz\n")
-      g.stage_files('updated.txt')
+    r = temp_repo_with_updated_file
+    s = r.status['updated.txt']
 
-      s = g.status['updated.txt']
-
-      assert(s.modified?)
-      assert_equal(:modified, s.status)
-    end
+    assert(s.modified?)
+    assert_equal(:modified, s.status)
   end
 
   def test_updated_file_is_staged
-    in_temp_repo do |g|
-      new_file('updated.txt', "foo\nbar")
-      g.stage_files('updated.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('updated.txt', "foo\nbar\nbaz\n")
-      g.stage_files('updated.txt')
+    r = temp_repo_with_updated_file
+    s = r.status['updated.txt']
 
-      s = g.status['updated.txt']
-
-      assert(s.changes_staged?)
-      assert(!s.changes_unstaged?)
-    end
+    assert(s.changes_staged?)
+    assert(!s.changes_unstaged?)
   end
 
   def test_updated_file_default_blob_is_index_blob
-    in_temp_repo do |g|
-      new_file('updated.txt', "foo\nbar")
-      g.stage_files('updated.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('updated.txt', "foo\nbar\nbaz\n")
-      g.stage_files('updated.txt')
+    r = temp_repo_with_updated_file
 
-      assert_equal(g.status['updated.txt'].blob(:index).data, g.status['updated.txt'].blob.data)
-    end
+    assert_equal(r.status['updated.txt'].blob(:index).data, r.status['updated.txt'].blob.data)
   end
 
   def test_updated_file_file_blob_is_correct
-    in_temp_repo do |g|
-      new_file('updated.txt', "foo\nbar")
-      g.stage_files('updated.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('updated.txt', "foo\nbar\nbaz\n")
-      g.stage_files('updated.txt')
+    r = temp_repo_with_updated_file
 
-      assert_equal("foo\nbar\nbaz\n", g.status['updated.txt'].blob(:file))
-    end
+    assert_equal("foo\nbar\nbaz\n", r.status['updated.txt'].blob(:file))
   end
 
   def test_updated_file_index_blob_is_correct
-    in_temp_repo do |g|
-      new_file('updated.txt', "foo\nbar")
-      g.stage_files('updated.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('updated.txt', "foo\nbar\nbaz\n")
-      g.stage_files('updated.txt')
+    r = temp_repo_with_updated_file
 
-      assert_equal("foo\nbar\nbaz\n", g.status['updated.txt'].blob(:index).data)
-    end
+    assert_equal("foo\nbar\nbaz\n", r.status['updated.txt'].blob(:index).data)
   end
 
   def test_updated_file_repo_blob_is_correct
-    in_temp_repo do |g|
-      new_file('updated.txt', "foo\nbar")
-      g.stage_files('updated.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('updated.txt', "foo\nbar\nbaz\n")
-      g.stage_files('updated.txt')
+    r = temp_repo_with_updated_file
 
-      assert_equal("foo\nbar", g.status['updated.txt'].blob(:repo).data)
-    end
+    assert_equal("foo\nbar", r.status['updated.txt'].blob(:repo).data)
   end
 
   def test_updated_file_diff_is_correct
-    in_temp_repo do |g|
-      new_file('updated.txt', "foo\nbar")
-      g.stage_files('updated.txt')
-      g.commit_index("Committed file to be modified.")
-      new_file('updated.txt', "foo\nbar\nbaz\n")
-      g.stage_files('updated.txt')
+    r = temp_repo_with_updated_file
 
-      d = g.status['updated.txt'].diff
+    d = r.status['updated.txt'].diff
 
-      assert_not_nil(d)
-      assert_equal('updated.txt', d.a_path)
-      assert_equal('updated.txt', d.b_path)
-      assert(!d.new_file)
-      assert(!d.deleted_file)
-      assert_equal('a907ec3', d.a_sha)
-      assert_equal('86e041d', d.b_sha)
-      assert_equal("--- a/updated.txt\n+++ b/updated.txt\n@@ -1,2 +1,3 @@\n foo\n-bar\n\\ No newline at end of file\n+bar\n+baz\n", d.diff)
-    end
+    assert_not_nil(d)
+    assert_equal('updated.txt', d.a_path)
+    assert_equal('updated.txt', d.b_path)
+    assert(!d.new_file)
+    assert(!d.deleted_file)
+    assert_equal('a907ec3', d.a_sha)
+    assert_equal('86e041d', d.b_sha)
+    assert_equal("--- a/updated.txt\n+++ b/updated.txt\n@@ -1,2 +1,3 @@\n foo\n-bar\n\\ No newline at end of file\n+bar\n+baz\n", d.diff)
   end
 
   def test_removed_file_has_status
     in_temp_repo do |g|
       new_file('removed.txt', "foo\nbar\nbaz\n")
-      g.stage_files('removed.txt')
-      g.commit_index("Added file to be deleted.")
-      g.remove('removed.txt') # also stages the changes
+      r.stage_files('removed.txt')
+      r.commit_index("Added file to be deleted.")
+      r.remove('removed.txt') # also stages the changes
 
-      assert_not_nil(g.status['removed.txt'])
+      assert_not_nil(r.status['removed.txt'])
     end
   end
 
   def test_removed_file_is_deleted
     in_temp_repo do |g|
       new_file('removed.txt', "foo\nbar\nbaz\n")
-      g.stage_files('removed.txt')
-      g.commit_index("Added file to be deleted.")
-      g.remove('removed.txt') # also stages the changes
+      r.stage_files('removed.txt')
+      r.commit_index("Added file to be deleted.")
+      r.remove('removed.txt') # also stages the changes
 
-      s = g.status['removed.txt']
+      s = r.status['removed.txt']
 
       assert(s.deleted?)
       assert_equal(:deleted, s.status)
@@ -387,11 +351,11 @@ class TestStatus < Test::Unit::TestCase
   def test_removed_file_is_staged
     in_temp_repo do |g|
       new_file('removed.txt', "foo\nbar\nbaz\n")
-      g.stage_files('removed.txt')
-      g.commit_index("Added file to be deleted.")
-      g.remove('removed.txt') # also stages the changes
+      r.stage_files('removed.txt')
+      r.commit_index("Added file to be deleted.")
+      r.remove('removed.txt') # also stages the changes
 
-      s = g.status['removed.txt']
+      s = r.status['removed.txt']
 
       assert(s.changes_staged?)
       assert(!s.changes_unstaged?)
@@ -401,55 +365,55 @@ class TestStatus < Test::Unit::TestCase
   def test_removed_file_default_blob_is_index_blob
     in_temp_repo do |g|
       new_file('removed.txt', "foo\nbar\nbaz\n")
-      g.stage_files('removed.txt')
-      g.commit_index("Added file to be deleted.")
-      g.remove('removed.txt') # also stages the changes
+      r.stage_files('removed.txt')
+      r.commit_index("Added file to be deleted.")
+      r.remove('removed.txt') # also stages the changes
 
-      assert_equal(g.status['removed.txt'].blob(:index), g.status['removed.txt'].blob)
+      assert_equal(r.status['removed.txt'].blob(:index), r.status['removed.txt'].blob)
     end
   end
 
   def test_removed_file_file_blob_is_empty
     in_temp_repo do |g|
       new_file('removed.txt', "foo\nbar\nbaz\n")
-      g.stage_files('removed.txt')
-      g.commit_index("Added file to be deleted.")
-      g.remove('removed.txt') # also stages the changes
+      r.stage_files('removed.txt')
+      r.commit_index("Added file to be deleted.")
+      r.remove('removed.txt') # also stages the changes
 
-      assert_nil(g.status['removed.txt'].blob(:file))
+      assert_nil(r.status['removed.txt'].blob(:file))
     end
   end
 
   def test_removed_file_index_blob_is_empty
     in_temp_repo do |g|
       new_file('removed.txt', "foo\nbar\nbaz\n")
-      g.stage_files('removed.txt')
-      g.commit_index("Added file to be deleted.")
-      g.remove('removed.txt') # also stages the changes
+      r.stage_files('removed.txt')
+      r.commit_index("Added file to be deleted.")
+      r.remove('removed.txt') # also stages the changes
 
-      assert_nil(g.status['removed.txt'].blob(:index))
+      assert_nil(r.status['removed.txt'].blob(:index))
     end
   end
 
   def test_removed_file_repo_blob_is_correct
     in_temp_repo do |g|
       new_file('removed.txt', "foo\nbar\nbaz\n")
-      g.stage_files('removed.txt')
-      g.commit_index("Added file to be deleted.")
-      g.remove('removed.txt') # also stages the changes
+      r.stage_files('removed.txt')
+      r.commit_index("Added file to be deleted.")
+      r.remove('removed.txt') # also stages the changes
 
-      assert_equal("foo\nbar\nbaz\n", g.status['removed.txt'].blob(:repo).data)
+      assert_equal("foo\nbar\nbaz\n", r.status['removed.txt'].blob(:repo).data)
     end
   end
 
   def test_removed_file_diff_is_correct
     in_temp_repo do |g|
       new_file('removed.txt', "foo\nbar\nbaz\n")
-      g.stage_files('removed.txt')
-      g.commit_index("Added file to be deleted.")
-      g.remove('removed.txt') # also stages the changes
+      r.stage_files('removed.txt')
+      r.commit_index("Added file to be deleted.")
+      r.remove('removed.txt') # also stages the changes
 
-      d = g.status['removed.txt'].diff
+      d = r.status['removed.txt'].diff
 
       assert_not_nil(d)
       assert_equal('removed.txt', d.a_path)
@@ -465,22 +429,22 @@ class TestStatus < Test::Unit::TestCase
   def test_deleted_file_has_status
     in_temp_repo do |g|
       new_file('deleted.txt', "foo\nbar\nbaz\n")
-      g.stage_files('deleted.txt')
-      g.commit_index("Added file to be deleted.")
+      r.stage_files('deleted.txt')
+      r.commit_index("Added file to be deleted.")
       FileUtils.rm('deleted.txt')
 
-      assert_not_nil(g.status['deleted.txt'])
+      assert_not_nil(r.status['deleted.txt'])
     end
   end
 
   def test_deleted_file_is_deleted
     in_temp_repo do |g|
       new_file('deleted.txt', "foo\nbar\nbaz\n")
-      g.stage_files('deleted.txt')
-      g.commit_index("Added file to be deleted.")
+      r.stage_files('deleted.txt')
+      r.commit_index("Added file to be deleted.")
       FileUtils.rm('deleted.txt')
 
-      s = g.status['deleted.txt']
+      s = r.status['deleted.txt']
 
       assert(s.deleted?)
       assert_equal(:deleted, s.status)
@@ -490,11 +454,11 @@ class TestStatus < Test::Unit::TestCase
   def test_deleted_file_is_unstaged
     in_temp_repo do |g|
       new_file('deleted.txt', "foo\nbar\nbaz\n")
-      g.stage_files('deleted.txt')
-      g.commit_index("Added file to be deleted.")
+      r.stage_files('deleted.txt')
+      r.commit_index("Added file to be deleted.")
       FileUtils.rm('deleted.txt')
 
-      s = g.status['deleted.txt']
+      s = r.status['deleted.txt']
 
       assert(!s.changes_staged?)
       assert(s.changes_unstaged?)
@@ -504,55 +468,55 @@ class TestStatus < Test::Unit::TestCase
   def test_deleted_file_default_blob_is_file_blob
     in_temp_repo do |g|
       new_file('deleted.txt', "foo\nbar\nbaz\n")
-      g.stage_files('deleted.txt')
-      g.commit_index("Added file to be deleted.")
+      r.stage_files('deleted.txt')
+      r.commit_index("Added file to be deleted.")
       FileUtils.rm('deleted.txt')
 
-      assert_equal(g.status['deleted.txt'].blob(:file), g.status['deleted.txt'].blob)
+      assert_equal(r.status['deleted.txt'].blob(:file), r.status['deleted.txt'].blob)
     end
   end
 
   def test_deleted_file_file_blob_is_empty
     in_temp_repo do |g|
       new_file('deleted.txt', "foo\nbar\nbaz\n")
-      g.stage_files('deleted.txt')
-      g.commit_index("Added file to be deleted.")
+      r.stage_files('deleted.txt')
+      r.commit_index("Added file to be deleted.")
       FileUtils.rm('deleted.txt')
 
-      assert_nil(g.status['deleted.txt'].blob(:file))
+      assert_nil(r.status['deleted.txt'].blob(:file))
     end
   end
 
   def test_deleted_file_index_blob_is_correct
     in_temp_repo do |g|
       new_file('deleted.txt', "foo\nbar\nbaz\n")
-      g.stage_files('deleted.txt')
-      g.commit_index("Added file to be deleted.")
+      r.stage_files('deleted.txt')
+      r.commit_index("Added file to be deleted.")
       FileUtils.rm('deleted.txt')
 
-      assert_equal("foo\nbar\nbaz\n", g.status['deleted.txt'].blob(:index).data)
+      assert_equal("foo\nbar\nbaz\n", r.status['deleted.txt'].blob(:index).data)
     end
   end
 
   def test_deleted_file_repo_blob_is_correct
     in_temp_repo do |g|
       new_file('deleted.txt', "foo\nbar\nbaz\n")
-      g.stage_files('deleted.txt')
-      g.commit_index("Added file to be deleted.")
+      r.stage_files('deleted.txt')
+      r.commit_index("Added file to be deleted.")
       FileUtils.rm('deleted.txt')
 
-      assert_equal("foo\nbar\nbaz\n", g.status['deleted.txt'].blob(:repo).data)
+      assert_equal("foo\nbar\nbaz\n", r.status['deleted.txt'].blob(:repo).data)
     end
   end
 
   def test_deleted_file_diff_is_correct
     in_temp_repo do |g|
       new_file('deleted.txt', "foo\nbar\nbaz\n")
-      g.stage_files('deleted.txt')
-      g.commit_index("Added file to be deleted.")
+      r.stage_files('deleted.txt')
+      r.commit_index("Added file to be deleted.")
       FileUtils.rm('deleted.txt')
 
-      d = g.status['deleted.txt'].diff
+      d = r.status['deleted.txt'].diff
 
       assert_not_nil(d)
       assert_equal('deleted.txt', d.a_path)
@@ -568,13 +532,13 @@ class TestStatus < Test::Unit::TestCase
   def test_remodified_file_has_status
     in_temp_repo do |g|
       new_file('remodified.txt', "foo")
-      g.stage_files('remodified.txt')
-      g.commit_index("Committed file to be modified.")
+      r.stage_files('remodified.txt')
+      r.commit_index("Committed file to be modified.")
       new_file('remodified.txt', "foo\nbar\n")
-      g.stage_files('remodified.txt')
+      r.stage_files('remodified.txt')
       new_file('remodified.txt', "foo\nbar\nbaz\n")
 
-      s = g.status['remodified.txt']
+      s = r.status['remodified.txt']
 
       assert_not_nil(s)
       assert_kind_of(Array, s)
@@ -585,13 +549,13 @@ class TestStatus < Test::Unit::TestCase
   def test_remodified_file_is_modified
     in_temp_repo do |g|
       new_file('remodified.txt', "foo")
-      g.stage_files('remodified.txt')
-      g.commit_index("Committed file to be modified.")
+      r.stage_files('remodified.txt')
+      r.commit_index("Committed file to be modified.")
       new_file('remodified.txt', "foo\nbar\n")
-      g.stage_files('remodified.txt')
+      r.stage_files('remodified.txt')
       new_file('remodified.txt', "foo\nbar\nbaz\n")
 
-      s = g.status['remodified.txt']
+      s = r.status['remodified.txt']
 
       assert(s.all?(&:modified?))
     end
@@ -600,13 +564,13 @@ class TestStatus < Test::Unit::TestCase
   def test_remodified_file_is_staged_and_unstaged
     in_temp_repo do |g|
       new_file('remodified.txt', "foo")
-      g.stage_files('remodified.txt')
-      g.commit_index("Committed file to be modified.")
+      r.stage_files('remodified.txt')
+      r.commit_index("Committed file to be modified.")
       new_file('remodified.txt', "foo\nbar\n")
-      g.stage_files('remodified.txt')
+      r.stage_files('remodified.txt')
       new_file('remodified.txt', "foo\nbar\nbaz\n")
 
-      s = g.status['remodified.txt']
+      s = r.status['remodified.txt']
 
       assert(s.any?(&:changes_staged?))
       assert(s.any?(&:changes_unstaged?))
@@ -616,13 +580,13 @@ class TestStatus < Test::Unit::TestCase
   def test_unstaged_remodified_file_blobs_are_correct
     in_temp_repo do |g|
       new_file('remodified.txt', "foo")
-      g.stage_files('remodified.txt')
-      g.commit_index("Committed file to be modified.")
+      r.stage_files('remodified.txt')
+      r.commit_index("Committed file to be modified.")
       new_file('remodified.txt', "foo\nbar\n")
-      g.stage_files('remodified.txt')
+      r.stage_files('remodified.txt')
       new_file('remodified.txt', "foo\nbar\nbaz\n")
 
-      s = g.status['remodified.txt'].select(&:changes_unstaged?).first
+      s = r.status['remodified.txt'].select(&:changes_unstaged?).first
 
       assert_equal(s.blob(:file), s.blob)
       assert_equal("foo\nbar\nbaz\n", s.blob(:file))
@@ -634,13 +598,13 @@ class TestStatus < Test::Unit::TestCase
   def test_staged_remodified_file_blobs_are_correct
     in_temp_repo do |g|
       new_file('remodified.txt', "foo")
-      g.stage_files('remodified.txt')
-      g.commit_index("Committed file to be modified.")
+      r.stage_files('remodified.txt')
+      r.commit_index("Committed file to be modified.")
       new_file('remodified.txt', "foo\nbar\n")
-      g.stage_files('remodified.txt')
+      r.stage_files('remodified.txt')
       new_file('remodified.txt', "foo\nbar\nbaz\n")
 
-      s = g.status['remodified.txt'].select(&:changes_staged?).first
+      s = r.status['remodified.txt'].select(&:changes_staged?).first
 
       assert_equal(s.blob(:index), s.blob)
       assert_equal("foo\nbar\nbaz\n", s.blob(:file))
@@ -652,13 +616,13 @@ class TestStatus < Test::Unit::TestCase
   def test_unstaged_remodified_file_diff_is_correct
     in_temp_repo do |g|
       new_file('remodified.txt', "foo")
-      g.stage_files('remodified.txt')
-      g.commit_index("Committed file to be modified.")
+      r.stage_files('remodified.txt')
+      r.commit_index("Committed file to be modified.")
       new_file('remodified.txt', "foo\nbar\n")
-      g.stage_files('remodified.txt')
+      r.stage_files('remodified.txt')
       new_file('remodified.txt', "foo\nbar\nbaz\n")
 
-      s = g.status['remodified.txt'].select(&:changes_unstaged?).first
+      s = r.status['remodified.txt'].select(&:changes_unstaged?).first
       d = s.diff
 
       assert_not_nil(d)
@@ -675,13 +639,13 @@ class TestStatus < Test::Unit::TestCase
   def test_staged_remodified_file_diff_is_correct
     in_temp_repo do |g|
       new_file('remodified.txt', "foo")
-      g.stage_files('remodified.txt')
-      g.commit_index("Committed file to be modified.")
+      r.stage_files('remodified.txt')
+      r.commit_index("Committed file to be modified.")
       new_file('remodified.txt', "foo\nbar\n")
-      g.stage_files('remodified.txt')
+      r.stage_files('remodified.txt')
       new_file('remodified.txt', "foo\nbar\nbaz\n")
 
-      s = g.status['remodified.txt'].select(&:changes_staged?).first
+      s = r.status['remodified.txt'].select(&:changes_staged?).first
       d = s.diff
 
       assert_not_nil(d)
@@ -698,10 +662,10 @@ class TestStatus < Test::Unit::TestCase
   def test_modified_added_file_has_status
     in_temp_repo do |g|
       new_file('modified_added.txt', "foo")
-      g.stage_files('modified_added.txt')
+      r.stage_files('modified_added.txt')
       new_file('modified_added.txt', "foo\nbar\n")
 
-      s = g.status['modified_added.txt']
+      s = r.status['modified_added.txt']
 
       assert_not_nil(s)
       assert_kind_of(Array, s)
@@ -712,10 +676,10 @@ class TestStatus < Test::Unit::TestCase
   def test_modified_added_file_is_added_and_modified
     in_temp_repo do |g|
       new_file('modified_added.txt', "foo")
-      g.stage_files('modified_added.txt')
+      r.stage_files('modified_added.txt')
       new_file('modified_added.txt', "foo\nbar\n")
 
-      s = g.status['modified_added.txt']
+      s = r.status['modified_added.txt']
 
       assert(s.any?(&:added?))
       assert(s.any?(&:modified?))
@@ -725,10 +689,10 @@ class TestStatus < Test::Unit::TestCase
   def test_modified_added_file_is_staged_and_unstaged
     in_temp_repo do |g|
       new_file('modified_added.txt', "foo")
-      g.stage_files('modified_added.txt')
+      r.stage_files('modified_added.txt')
       new_file('modified_added.txt', "foo\nbar\n")
 
-      s = g.status['modified_added.txt']
+      s = r.status['modified_added.txt']
 
       assert(s.any?(&:changes_staged?))
       assert(s.any?(&:changes_unstaged?))
@@ -738,10 +702,10 @@ class TestStatus < Test::Unit::TestCase
   def test_unstaged_modified_added_file_blobs_are_correct
     in_temp_repo do |g|
       new_file('modified_added.txt', "foo")
-      g.stage_files('modified_added.txt')
+      r.stage_files('modified_added.txt')
       new_file('modified_added.txt', "foo\nbar\n")
 
-      s = g.status['modified_added.txt'].select(&:changes_unstaged?).first
+      s = r.status['modified_added.txt'].select(&:changes_unstaged?).first
 
       assert_equal(s.blob(:file), s.blob)
       assert_equal("foo\nbar\n", s.blob(:file))
@@ -753,10 +717,10 @@ class TestStatus < Test::Unit::TestCase
   def test_staged_modified_added_file_blobs_are_correct
     in_temp_repo do |g|
       new_file('modified_added.txt', "foo")
-      g.stage_files('modified_added.txt')
+      r.stage_files('modified_added.txt')
       new_file('modified_added.txt', "foo\nbar\n")
 
-      s = g.status['modified_added.txt'].select(&:changes_staged?).first
+      s = r.status['modified_added.txt'].select(&:changes_staged?).first
 
       assert_equal(s.blob(:index), s.blob)
       assert_equal("foo\nbar\n", s.blob(:file))
@@ -768,10 +732,10 @@ class TestStatus < Test::Unit::TestCase
   def test_unstaged_modified_added_file_diff_is_correct
     in_temp_repo do |g|
       new_file('modified_added.txt', "foo")
-      g.stage_files('modified_added.txt')
+      r.stage_files('modified_added.txt')
       new_file('modified_added.txt', "foo\nbar\n")
 
-      s = g.status['modified_added.txt'].select(&:changes_unstaged?).first
+      s = r.status['modified_added.txt'].select(&:changes_unstaged?).first
       d = s.diff
 
       assert_not_nil(d)
@@ -788,10 +752,10 @@ class TestStatus < Test::Unit::TestCase
   def test_staged_modified_added_file_diff_is_correct
     in_temp_repo do |g|
       new_file('modified_added.txt', "foo")
-      g.stage_files('modified_added.txt')
+      r.stage_files('modified_added.txt')
       new_file('modified_added.txt', "foo\nbar\n")
 
-      s = g.status['modified_added.txt'].select(&:changes_staged?).first
+      s = r.status['modified_added.txt'].select(&:changes_staged?).first
       d = s.diff
 
       assert_not_nil(d)
