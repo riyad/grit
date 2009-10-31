@@ -12,31 +12,31 @@ class TestRepo < Test::Unit::TestCase
     FileUtils.cp_r(clone_path, tmp_path)
     File.join(tmp_path, 'dot_git')
   end
-  
+
   def test_update_refs_packed
     gpath = create_temp_repo(File.join(File.dirname(__FILE__), *%w[dot_git]))
     @git = Grit::Repo.new(gpath, :is_bare => true)
-    
+
     # new and existing
     test   = 'ac9a30f5a7f0f163bbe3b6f0abf18a6c83b06872'
     master = 'ca8a30f5a7f0f163bbe3b6f0abf18a6c83b0687a'
-    
+
     @git.update_ref('testref', test)
     new_t = @git.get_head('testref').commit.sha
     assert new_t != master
-    
+
     @git.update_ref('master', test)
     new_m = @git.get_head('master').commit.sha
     assert new_m != master
-    
+
     old = @git.get_head('nonpack').commit.sha
     @git.update_ref('nonpack', test)
     newp = @git.get_head('nonpack').commit.sha
     assert newp != old
-    
+
     FileUtils.rm_r(gpath)
   end
-  
+
   # new
 
   def test_new_should_raise_on_invalid_repo_location
@@ -84,7 +84,7 @@ class TestRepo < Test::Unit::TestCase
   def test_heads_should_populate_head_data
     @r = Repo.new(File.join(File.dirname(__FILE__), *%w[dot_git]), :is_bare => true)
     head = @r.heads[1]
-    
+
     assert_equal 'test/master', head.name
     assert_equal '2d3acf90f35989df8f262dc50beadc4ee3ae1560', head.commit.id
   end
@@ -256,14 +256,16 @@ class TestRepo < Test::Unit::TestCase
   # enable_daemon_serve
 
   def test_enable_daemon_serve
-    FileUtils.expects(:touch).with(File.join(@r.path, 'git-daemon-export-ok'))
+    f = stub
+    f.expects("write").with('')
+    File.expects(:open).with(File.join(@r.path, 'git-daemon-export-ok'), 'w').yields(f)
     @r.enable_daemon_serve
   end
 
   # disable_daemon_serve
 
   def test_disable_daemon_serve
-    FileUtils.expects(:rm_f).with(File.join(@r.path, 'git-daemon-export-ok'))
+    FileUtils.expects(:rm_rf).with(File.join(@r.path, 'git-daemon-export-ok'))
     @r.disable_daemon_serve
   end
 
@@ -271,12 +273,12 @@ class TestRepo < Test::Unit::TestCase
     Git.any_instance.expects(:gc).with({:auto => true})
     @r.gc_auto
   end
-  
+
   # alternates
 
   def test_alternates_with_two_alternates
     File.expects(:exist?).with("#{absolute_project_path}/.git/objects/info/alternates").returns(true)
-    File.expects(:read).returns("/path/to/repo1/.git/objects\n/path/to/repo2.git/objects\n")
+    File.any_instance.expects(:read).returns("/path/to/repo1/.git/objects\n/path/to/repo2.git/objects\n")
 
     assert_equal ["/path/to/repo1/.git/objects", "/path/to/repo2.git/objects"], @r.alternates
   end
@@ -341,18 +343,18 @@ class TestRepo < Test::Unit::TestCase
     Git.any_instance.expects(:log).with({:pretty => 'raw', :max_count => 1}, 'master', '--', 'file.rb').returns(fixture('rev_list'))
     @r.log('master', 'file.rb', :max_count => 1)
   end
-  
+
   # commit_deltas_from
-  
+
   def test_commit_deltas_from_nothing_new
     other_repo = Repo.new(GRIT_REPO)
     @r.git.expects(:rev_list).with({}, "master").returns(fixture("rev_list_delta_b"))
     other_repo.git.expects(:rev_list).with({}, "master").returns(fixture("rev_list_delta_a"))
-    
+
     delta_blobs = @r.commit_deltas_from(other_repo)
     assert_equal 0, delta_blobs.size
   end
-  
+
   def test_commit_deltas_from_when_other_has_new
     other_repo = Repo.new(GRIT_REPO)
     @r.git.expects(:rev_list).with({}, "master").returns(fixture("rev_list_delta_a"))

@@ -1,5 +1,5 @@
 module Grit
-  
+
   class Diff
     attr_reader :a_path, :b_path
     attr_reader :a_sha,  :b_sha
@@ -7,7 +7,7 @@ module Grit
     attr_reader :a_mode, :b_mode
     attr_reader :new_file, :deleted_file
     attr_reader :diff
-    
+
     def initialize(repo, a_path, b_path, a_sha, b_sha, a_mode, b_mode, new_file, deleted_file, diff)
       @repo = repo
       @a_path = a_path
@@ -22,28 +22,28 @@ module Grit
       @deleted_file = deleted_file || @b_blob.nil?
       @diff = diff
     end
-    
+
     def self.list_from_string(repo, text)
       lines = text.split("\n", -1)
-      
+
       diffs = []
-      
+
       while !lines.empty?
         m, a_path, b_path = *lines.shift.match(%r{^diff --git a/(.+?) b/(.+)$})
-        
+
         if lines.first =~ /^old mode/
           m, a_mode = *lines.shift.match(/^old mode (\d+)/)
           m, b_mode = *lines.shift.match(/^new mode (\d+)/)
         end
-        
+
         if lines.empty? || lines.first =~ /^diff --git/
           diffs << Diff.new(repo, a_path, b_path, nil, nil, a_mode, b_mode, false, false, nil)
           next
         end
-        
+
         new_file = false
         deleted_file = false
-        
+
         if lines.first =~ /^new file/
           m, b_mode = lines.shift.match(/^new file mode (.+)$/)
           a_mode = nil
@@ -53,20 +53,20 @@ module Grit
           b_mode = nil
           deleted_file = true
         end
-        
+
         m, a_sha, b_sha, b_mode = *lines.shift.match(%r{^index ([0-9A-Fa-f]+)\.\.([0-9A-Fa-f]+) ?(.+)?$})
         b_mode.strip! if b_mode
-        
+
         diff_lines = []
         while lines.first && lines.first !~ /^diff/
           diff_lines << lines.shift
         end
         diff = diff_lines.join("\n")
         diff = nil if diff.empty?
-        
+
         diffs << Diff.new(repo, a_path, b_path, a_sha, b_sha, a_mode, b_mode, new_file, deleted_file, diff)
       end
-      
+
       diffs
     end
 
@@ -82,5 +82,5 @@ module Grit
       self.diff.split("\n").count { |line| line.start_with?('+') } -1
     end
   end # Diff
-  
+
 end # Grit

@@ -1,11 +1,11 @@
 module Grit
-  
+
   class Status
     include Enumerable
-    
+
     @base = nil
     @files = nil
-    
+
     def initialize(base)
       @base = base
       construct_status
@@ -34,7 +34,7 @@ module Grit
     def unstaged_changes
       @files.select(&:changes_unstaged?)
     end
-    
+
     # enumerable method
 
     def [](file)
@@ -44,14 +44,14 @@ module Grit
     def each(&block)
       @files.each(&block)
     end
-    
+
     class StatusFile
       attr_accessor :path, :status, :stage
       attr_accessor :mode_index, :mode_repo
       attr_accessor :sha_index, :sha_repo
-      
+
       @base = nil
-      
+
       def initialize(base, hash)
         @base = base
         @path = hash[:path]
@@ -115,9 +115,9 @@ module Grit
         changed? && !@staged
       end
     end
-    
+
     private
-    
+
       def construct_status
         @status = {}
         ls_files.each do |file, data|
@@ -217,5 +217,5 @@ module Grit
         @base.git.ls_files({:others => true, :ignored => true, :exclude_standard => true}).split("\n")
       end
   end
-  
+
 end

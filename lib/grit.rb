@@ -9,16 +9,23 @@ require 'timeout'
 require 'logger'
 require 'digest/sha1'
 
+
 if defined? RUBY_ENGINE && RUBY_ENGINE == 'jruby'
   require 'open3'
+elsif RUBY_PLATFORM.downcase =~ /mswin(?!ce)|mingw|bccwin/
+  require 'win32/open3'
 else
   require 'open3_detach'
 end
 
 # third party
 require 'rubygems'
-gem "mime-types", ">=0"
-require 'mime/types'
+begin
+  gem "mime-types", ">=0"
+  require 'mime/types'
+rescue Gem::LoadError => e
+  puts "WARNING: Gem LoadError: #{e.message}"
+end
 
 # ruby 1.9 compatibility
 require 'grit/ruby1.9'
@@ -27,7 +34,7 @@ require 'grit/ruby1.9'
 require 'grit/lazy'
 require 'grit/errors'
 require 'grit/git-ruby'
-require 'grit/git'
+require 'grit/git' unless defined? Grit::Git
 require 'grit/ref'
 require 'grit/tag'
 require 'grit/commit'
