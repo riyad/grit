@@ -135,6 +135,7 @@ class TestStatus < Test::Unit::TestCase
     Git.any_instance.expects(:ls_files).with(:stage => true).returns('')
     Git.any_instance.expects(:ls_files).with(:others => true).returns('')
     Git.any_instance.expects(:ls_files).with(:others => true, :ignored => true, :exclude_standard => true).returns('')
+    Git.any_instance.expects(:ls_files).with(:others => true, :ignored => true, :exclude_standard => true, :directory => true).returns('')
     Git.any_instance.expects(:diff_index).with({}, 'HEAD').returns('')
     Git.any_instance.expects(:diff_files).with().returns('')
 
