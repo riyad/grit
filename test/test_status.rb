@@ -669,4 +669,53 @@ class TestStatus < Test::Unit::TestCase
       assert_equal(file_content, s.blob)
     end
   end
+
+  def test_ignore_file_name
+    in_temp_repo do |repo|
+      Dir.chdir repo.working_dir do
+        new_file('.gitignore', "file_to_be_ignored.txt")
+        new_file('file_to_be_ignored.txt', "foo\nbar\n")
+      end
+
+      assert_equal(1, repo.status.to_a.size)
+      assert_not_nil(repo.status['.gitignore'])
+      assert_nil(repo.status['file_to_be_ignored.txt'])
+    end
+  end
+
+  def test_ignore_directory
+    in_temp_repo do |repo|
+      Dir.chdir repo.working_dir do
+        new_file('.gitignore', "ignored_dir/") # not ignored
+        FileUtils.mkdir_p('ignored_dir/ignored_dir_1')
+        new_file('ignored_dir/ignored_file_1.txt', "foo\n")
+        new_file('ignored_dir/ignored_file_2.txt', "bar\n")
+        new_file('ignored_dir/ignored_dir_1/ignored_file_3.txt', "baz\n")
+      end
+
+      assert_equal(1, repo.status.to_a.size)
+      assert_not_nil(repo.status['.gitignore']) # not ignored
+      assert_nil(repo.status['ignored_dir/ignored_file_1.txt'])
+      assert_nil(repo.status['ignored_dir/ignored_file_2.txt'])
+      assert_nil(repo.status['ignored_dir/ignored_dir_1/ignored_file_3.txt'])
+    end
+  end
+
+  def test_ignore_glob
+    in_temp_repo do |repo|
+      Dir.chdir repo.working_dir do
+        new_file('.gitignore', "dir/*.txt") # not ignored
+        FileUtils.mkdir_p('dir/dir_1')
+        new_file('dir/ignored_file_1.txt', "foo\n")
+        new_file('dir/ignored_file_2.txt', "bar\n")
+        new_file('dir/dir_1/file_3.txt', "baz\n") # not ignored
+      end
+
+      assert_equal(2, repo.status.to_a.size)
+      assert_not_nil(repo.status['.gitignore'])
+      assert_not_nil(repo.status['dir/dir_1/file_3.txt'])
+      assert_nil(repo.status['dir/ignored_file_1.txt'])
+      assert_nil(repo.status['dir/ignored_file_2.txt'])
+    end
+  end
 end
