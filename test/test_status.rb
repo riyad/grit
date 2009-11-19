@@ -1,6 +1,9 @@
 require File.dirname(__FILE__) + '/helper'
 
 class TestStatus < Test::Unit::TestCase
+
+  # helpers
+
   def temp_repo
     filename = "git_test#{Time.now.to_i.to_s}#{rand(300).to_s.rjust(3, '0')}"
     tmp_path = File.join("/tmp/", filename)
@@ -22,6 +25,8 @@ class TestStatus < Test::Unit::TestCase
       f.print contents
     end
   end
+
+  # prepared temporary repositories
 
   def temp_repo_with_new_file
     return @temp_repo_with_new_file if @temp_repo_with_new_file
