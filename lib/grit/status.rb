@@ -217,7 +217,16 @@ module Grit
       end
 
       def ignored_files
-        @base.git.ls_files({:others => true, :ignored => true, :exclude_standard => true}).split("\n").map {|file| unescape_file_name(file)}
+        # list ignored files
+        ignored_files = @base.git.ls_files({:others => true, :ignored => true, :exclude_standard => true}).split("\n").map {|file| unescape_file_name(file)}
+        # list ignored directories (may also include files)
+        ignored_dirs = @base.git.ls_files({:others => true, :ignored => true, :exclude_standard => true, :directory => true}).split("\n")
+        Dir.chdir(@base.working_dir) do # in case we are not in the working dir
+          # unescape file names and select only directories
+          ignored_dirs = ignored_dirs.map {|dir| unescape_file_name(dir)}.select {|dir| File.directory?(dir)}
+          # list globbed files from ignored directories
+          ignored_files += Dir.glob(ignored_dirs.map {|dir| File.join(dir, "**/*")})
+        end
       end
 
       private
