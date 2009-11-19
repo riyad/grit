@@ -662,8 +662,6 @@ class TestStatus < Test::Unit::TestCase
 
       s = repo.status[file_name]
 
-      p repo.status
-      assert_equal(file_name, repo.status.map(&:path)[0])
       assert_equal(1, repo.status.untracked.size)
       assert_not_nil(s)
       assert(s.untracked?)
