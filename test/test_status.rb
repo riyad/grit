@@ -649,4 +649,26 @@ class TestStatus < Test::Unit::TestCase
     assert_equal('1910281', d.b_sha)
     assert_equal("--- /dev/null\n+++ b/modified_added.txt\n@@ -0,0 +1 @@\n+foo\n\\ No newline at end of file\n", d.diff)
   end
+
+  # others
+
+  def test_escaped_file_names
+    in_temp_repo do |repo|
+      file_name = 'file_123äöü.txt'
+      file_content = "foo\nbar\baz\näöü\n"
+      Dir.chdir repo.working_dir do
+        new_file(file_name, file_content)
+      end
+
+      s = repo.status[file_name]
+
+      p repo.status
+      assert_equal(file_name, repo.status.map(&:path)[0])
+      assert_equal(1, repo.status.untracked.size)
+      assert_not_nil(s)
+      assert(s.untracked?)
+      assert_equal(file_name, s.path)
+      assert_equal(file_content, s.blob)
+    end
+  end
 end
