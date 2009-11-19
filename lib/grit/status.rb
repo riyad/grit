@@ -179,6 +179,7 @@ module Grit
         hsh = {}
         @base.git.diff_files.split("\n").each do |line|
           (info, file) = line.split("\t")
+          file =  unescape_file_name(file)
           (mode_src, mode_dest, sha_src, sha_dest, status) = info.split
           hsh[file] = {:path => file, :mode_repo => mode_src.to_s[1, 7], :mode_index => mode_dest,
                         :sha_repo => sha_src, :sha_index => sha_dest, :status => status}
@@ -191,8 +192,9 @@ module Grit
         hsh = {}
         @base.git.diff_index({}, treeish).split("\n").each do |line|
           (info, file) = line.split("\t")
+          file =  unescape_file_name(file)
           (mode_src, mode_dest, sha_src, sha_dest, status) = info.split
-          hsh[file] = {:path => file, :mode_repo => mode_src.to_s[1, 7], :mode_index => mode_dest, 
+          hsh[file] = {:path => file, :mode_repo => mode_src.to_s[1, 7], :mode_index => mode_dest,
                         :sha_repo => sha_src, :sha_index => sha_dest, :status => status}
         end
         hsh
@@ -202,6 +204,7 @@ module Grit
         hsh = {}
         @base.git.ls_files({:stage => true}).split("\n").each do |line|
           (info, file) = line.split("\t")
+          file =  unescape_file_name(file)
           (mode, sha, stage) = info.split
           hsh[file] = {:path => file, :mode_index => mode, :sha_index => sha, :stage => stage}
         end
@@ -209,12 +212,19 @@ module Grit
       end
 
       def untracked_files
-        other_files = @base.git.ls_files({:others => true}).split("\n")
+        other_files = @base.git.ls_files({:others => true}).split("\n").map {|file| unescape_file_name(file)}
         other_files - ignored_files
       end
 
       def ignored_files
-        @base.git.ls_files({:others => true, :ignored => true, :exclude_standard => true}).split("\n")
+        @base.git.ls_files({:others => true, :ignored => true, :exclude_standard => true}).split("\n").map {|file| unescape_file_name(file)}
+      end
+
+      private
+
+      def unescape_file_name(file_name)
+        # FIXME find better way for "unescaping"
+        /^\"(.*)\"$/ =~ file_name ? eval(%Q{"#{$1}"}) : file_name
       end
   end
 
