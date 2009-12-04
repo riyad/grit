@@ -31,6 +31,7 @@ class TestIndexStatus < Test::Unit::TestCase
     Git.any_instance.expects(:ls_files).with({:stage => true}).returns(fixture('ls_files'))
     Git.any_instance.expects(:ls_files).with(:others => true).returns('')
     Git.any_instance.expects(:ls_files).with(:others => true, :ignored => true, :exclude_standard => true).returns('')
+    Git.any_instance.expects(:ls_files).with(:others => true, :ignored => true, :exclude_standard => true, :directory => true).returns('')
     status = @r.status
     stat = status['lib/grit/repo.rb']
     assert_equal stat.sha_repo, "71e930d551c413a123f43e35c632ea6ba3e3705e"
