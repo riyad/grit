@@ -417,9 +417,8 @@ module Grit
     def fork_bare(path, options = {})
       default_options = {:bare => true, :shared => true}
       real_options = default_options.merge(options)
-      Git.new(path).fs_mkdir('..')
-      self.git.clone(real_options, self.path, path)
-      Repo.new(path)
+
+      Repo.clone(self.path, path, real_options)
     end
 
     # Fork a bare git repository from another repo
@@ -430,9 +429,8 @@ module Grit
     def fork_bare_from(path, options = {})
       default_options = {:bare => true, :shared => true}
       real_options = default_options.merge(options)
-      Git.new(self.path).fs_mkdir('..')
-      self.git.clone(real_options, path, self.path)
-      Repo.new(self.path)
+
+      Repo.clone(path, self.path, real_options)
     end
 
     # Archive the given treeish
