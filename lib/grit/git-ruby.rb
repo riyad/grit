@@ -47,7 +47,7 @@ module Grit
     #   git.diff({}, 'ec03743', 'f1ec1aea')
     #   git.diff({:numstat => true}, 'ec03743', 'f1ec1aea')
     #   git.diff({:cached => true}, nil, nil, 'README')
-    def diff(options, a_sha, b_sha, *files)
+    def diff(options, a_sha, b_sha = nil, *files)
       allowed_options = [:full_index]
       if (options.keys - allowed_options).size == 0 && files.empty?
         try_run { ruby_git.diff(a_sha, b_sha, options) }
