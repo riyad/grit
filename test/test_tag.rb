@@ -14,7 +14,7 @@ class TestTag < Test::Unit::TestCase
   # list_from_string
 
   def test_list_from_string
-    tag = @r.tags[1]
+    tag = @r.tags[2]
 
     assert_equal 'not_annotated', tag.name
     assert_equal 'ca8a30f5a7f0f163bbe3b6f0abf18a6c83b0687a', tag.commit.id
@@ -23,7 +23,7 @@ class TestTag < Test::Unit::TestCase
   # list_from_string_for_signed_tag
 
   def test_list_from_string_for_signed_tag
-    tag = @r.tags[2]
+    tag = @r.tags[1]
 
     assert_equal 'v0.7.0', tag.name
     assert_equal '7bcc0ee821cdd133d8a53e8e7173a334fef448aa', tag.commit.id
