@@ -57,8 +57,8 @@ module Grit
       repo_path = File.expand_path(my_repo)
       bare_repo_path = options[:bare] ? repo_path : File.join(repo_path, '.git')
 
-      Grit::Git.new(bare_repo_path).clone({:bare => true}, their_repo, bare_repo_path)
-      repo = Grit::Repo.new(repo_path, :is_bare => options[:bare])
+      Git.new(bare_repo_path).clone(options, their_repo, bare_repo_path)
+      repo = Repo.new(repo_path, :is_bare => options[:bare])
 
       repo.git.checkout({}, 'HEAD') unless options[:bare]
 
@@ -124,7 +124,7 @@ module Grit
 
       Git.new(bare_repo_path).init(options)
 
-      Grit::Repo.new(repo_path, :is_bare => options[:bare])
+      Repo.new(repo_path, :is_bare => options[:bare])
     end
 
     # The project's description. Taken verbatim from GIT_REPO/description
